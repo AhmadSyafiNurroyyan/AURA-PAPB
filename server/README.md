@@ -30,6 +30,23 @@ Setelah startup berhasil, cek `http://localhost:8080/health`. Respons yang dihar
 
 ## Konfigurasi Railway
 
-Set `DATABASE_URL` dan `JWT_SECRET` pada environment variables service Railway. Parser menerima URL `postgresql://...` yang diberikan PostgreSQL Railway maupun JDBC URL `jdbc:postgresql://...`. Railway menyediakan `PORT`; aplikasi bind ke `0.0.0.0`.
+Dockerfile multi-stage membangun distribusi dengan JDK 21, lalu menyalin hasilnya ke runtime JRE 21 yang lebih kecil. Railway mendeteksi `Dockerfile` saat folder service menjadi Root Directory.
+
+### Langkah deploy
+
+1. Pastikan perubahan L06 sudah di-push user ke branch backend yang akan di-deploy.
+2. Di Railway, buat project dari repository GitHub AURA dan pilih branch tersebut.
+3. Tambahkan service PostgreSQL ke project. Biarkan nama service `Postgres` atau sesuaikan referensi variable pada langkah berikut dengan nama service yang dipilih.
+4. Pada service aplikasi, buka pengaturan build dan tetapkan **Root Directory** ke `server`. Railway akan memakai `server/Dockerfile`.
+5. Pada Variables service aplikasi, tambahkan:
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (ganti `Postgres` jika nama service database berbeda).
+   - `JWT_SECRET` = secret acak minimal 32 karakter; buat langsung di Railway, jangan simpan di repo.
+   - `UPLOAD_DIR` = `/data/uploads`.
+   Railway menyediakan `PORT`; aplikasi bind ke `0.0.0.0`.
+6. Tambahkan Volume ke service aplikasi dengan mount path `/data`, agar unggahan di `/data/uploads` bertahan saat deployment diganti.
+7. Pada pengaturan health check service, isi path `/health`. Jangan override start command; image menjalankan distribusi `aura-server`.
+8. Deploy branch tersebut. Pastikan build log menunjukkan Dockerfile digunakan, deploy log menunjukkan migrasi Flyway selesai tanpa error, dan URL publik service memberi `200` dengan `{"status":"ok"}` pada `/health`.
+
+Parser menerima URL `postgresql://...` dari PostgreSQL Railway maupun JDBC URL `jdbc:postgresql://...`. Status deploy dan URL publik harus dikonfirmasi setelah deployment di Railway; dokumentasi ini tidak menandakan server sudah ter-deploy.
 
 `.env.example` hanya mencatat nama variabel. Jangan masukkan kredensial atau secret ke file yang di-commit.
