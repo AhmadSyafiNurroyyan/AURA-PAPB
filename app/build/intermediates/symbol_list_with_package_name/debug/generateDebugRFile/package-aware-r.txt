@@ -1,0 +1,2 @@
+com.aura.retail
+drawable qris_sample
