@@ -6,13 +6,16 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.Color
 import com.aura.app.ui.AuraApp
+import com.aura.app.ui.theme.AuraTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Surface(color = Color(0xFFFCF9F8)) {
-                AuraApp()
+            AuraTheme {
+                Surface(color = Color(0xFFFCF9F8)) {
+                    AuraApp()
+                }
             }
         }
     }
