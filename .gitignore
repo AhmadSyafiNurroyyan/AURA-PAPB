@@ -1,7 +1,10 @@
 .gradle/
+.kotlin/
 .idea/
-/build/
-/local.properties
+build/
+app/build/
+local.properties
+.env
 *.iml
 app/schemas/
 agents/
