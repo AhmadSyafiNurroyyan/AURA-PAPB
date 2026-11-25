@@ -1,8 +1,35 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
+
+val localProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use(::load)
+    }
+}
+
+fun normalizeBaseUrl(raw: String): String {
+    val trimmed = raw.trim()
+    return if (trimmed.endsWith("/")) trimmed else "$trimmed/"
+}
+
+fun quoteForBuildConfig(value: String): String =
+    "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+val debugBaseUrl = normalizeBaseUrl(
+    localProps.getProperty("aura.baseUrl.debug")?.takeIf { it.isNotBlank() }
+        ?: "http://10.0.2.2:8080/api/v1/",
+)
+
+val releaseBaseUrl = normalizeBaseUrl(
+    localProps.getProperty("aura.baseUrl.release")?.takeIf { it.isNotBlank() }
+        ?: "https://sweet-solace-production-3107d49d.up.railway.app/api/v1/",
+)
 
 android {
     namespace = "com.aura.app"
@@ -18,10 +45,19 @@ android {
     }
 
     buildTypes {
-        release { optimization { enable = false } }
+        debug {
+            buildConfigField("String", "BASE_URL", quoteForBuildConfig(debugBaseUrl))
+        }
+        release {
+            optimization { enable = false }
+            buildConfigField("String", "BASE_URL", quoteForBuildConfig(releaseBaseUrl))
+        }
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
