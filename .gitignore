@@ -4,3 +4,5 @@
 /local.properties
 *.iml
 app/schemas/
+agents/
+AGENTS.md
