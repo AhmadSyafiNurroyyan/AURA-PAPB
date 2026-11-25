@@ -37,7 +37,7 @@ Dockerfile multi-stage membangun distribusi dengan JDK 21, lalu menyalin hasilny
 1. Pastikan perubahan L06 sudah di-push user ke branch backend yang akan di-deploy.
 2. Di Railway, buat project dari repository GitHub AURA dan pilih branch tersebut.
 3. Tambahkan service PostgreSQL ke project. Biarkan nama service `Postgres` atau sesuaikan referensi variable pada langkah berikut dengan nama service yang dipilih.
-4. Pada service aplikasi, buka pengaturan build dan tetapkan **Root Directory** ke `server`. Railway akan memakai `server/Dockerfile`.
+4. Pada service aplikasi, buka **Settings** dan tetapkan **Root Directory** ke `/server`. Railway akan memakai `Dockerfile` dari folder itu.
 5. Pada Variables service aplikasi, tambahkan:
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (ganti `Postgres` jika nama service database berbeda).
    - `JWT_SECRET` = secret acak minimal 32 karakter; buat langsung di Railway, jangan simpan di repo.

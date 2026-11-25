@@ -1,6 +1,7 @@
 package com.aura.server.routes
 
 import com.aura.server.configureHttp
+import com.aura.server.auth.authComponents
 import com.aura.server.plugins.ApiException
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -11,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 class HealthRoutesTest {
     @Test
@@ -57,5 +59,17 @@ class HealthRoutesTest {
         assertEquals(HttpStatusCode.InternalServerError, response.status)
         assertTrue(body.contains("KESALAHAN_INTERNAL"))
         assertFalse(body.contains("confidential detail"))
+    }
+
+    @Test
+    fun `protected cashier routes reject requests without a bearer token`() = testApplication {
+        application { configureHttp(authComponents("local-test-secret-that-is-long-enough-32")) }
+
+        val response = client.get("/api/v1/kasir")
+        val body = response.bodyAsText()
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertTrue(body.contains("SESI_TIDAK_VALID"))
+        assertFalse(body.contains("stackTrace"))
     }
 }
