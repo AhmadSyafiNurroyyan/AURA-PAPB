@@ -9,3 +9,8 @@ local.properties
 app/schemas/
 agents/
 AGENTS.md
+
+server/build/
+server/.gradle/
+server/var/
+server/.env
