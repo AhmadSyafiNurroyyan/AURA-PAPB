@@ -109,7 +109,7 @@ internal class ExposedSalesRepository {
         val normalizedNote = request.catatan?.trim()?.takeIf(String::isNotEmpty)
         if ((normalizedNote?.length ?: 0) > 1000) invalid("CATATAN_TIDAK_VALID", "Catatan maksimal 1000 karakter.")
 
-        val transactionId = id.toKotlinUuid()
+        val transactionId = id
         val movementResponses = mutableListOf<PergerakanTransaksiResponse>()
         val itemResponses = mutableListOf<ItemTransaksiResponse>()
         val notifications = mutableListOf<NotifikasiStokResponse>()
@@ -117,7 +117,7 @@ internal class ExposedSalesRepository {
         var balance = storeRow[TokoTable.saldoKumulatif]
 
         TransaksiPenjualanTable.insert {
-            it[TransaksiPenjualanTable.id] = transactionId
+            it[TransaksiPenjualanTable.id] = transactionId.toKotlinUuid()
             it[idToko] = account.idToko
             it[nomorTransaksi] = invoice
             it[akunId] = account.id.toKotlinUuid()
@@ -156,11 +156,11 @@ internal class ExposedSalesRepository {
                 StatusStokEvaluator.evaluate(newStock, row[BarangTable.stokMinimum]),
                 now,
             )?.let(notifications::add)
-            val itemId = UUID.randomUUID().toKotlinUuid()
+            val itemId = UUID.randomUUID()
             ItemTransaksiTable.insert {
-                it[id] = itemId
+                it[id] = itemId.toKotlinUuid()
                 it[idToko] = account.idToko
-                it[transaksiId] = transactionId
+                it[transaksiId] = transactionId.toKotlinUuid()
                 it[barangId] = row[BarangTable.id]
                 it[namaBarangSnapshot] = row[BarangTable.nama]
                 it[satuanSnapshot] = row[BarangTable.satuan]
@@ -168,9 +168,9 @@ internal class ExposedSalesRepository {
                 it[hargaJualSnapshot] = row[BarangTable.hargaJual]
                 it[hppSnapshot] = row[BarangTable.hppRataRata]
             }
-            val movementId = UUID.randomUUID().toKotlinUuid()
+            val movementId = UUID.randomUUID()
             PergerakanStokTable.insert {
-                it[id] = movementId
+                it[id] = movementId.toKotlinUuid()
                 it[idToko] = account.idToko
                 it[PergerakanStokTable.barangId] = row[BarangTable.id]
                 it[akunId] = account.id.toKotlinUuid()
@@ -179,16 +179,16 @@ internal class ExposedSalesRepository {
                 it[jumlah] = line.quantity
                 it[stokSebelum] = oldStock
                 it[stokSesudah] = newStock
-                it[referensiId] = transactionId
+                it[referensiId] = transactionId.toKotlinUuid()
                 it[jenisReferensi] = "TRANSAKSI"
                 it[dibuatPada] = now
             }
             itemResponses += ItemTransaksiResponse(
-                itemId.toJavaUuid(), row[BarangTable.id].toJavaUuid(), row[BarangTable.nama],
+                itemId, row[BarangTable.id].toJavaUuid(), row[BarangTable.nama],
                 row[BarangTable.satuan], line.quantity, row[BarangTable.hargaJual], row[BarangTable.hppRataRata],
             )
             movementResponses += PergerakanTransaksiResponse(
-                movementId.toJavaUuid(), row[BarangTable.id].toJavaUuid(), "KELUAR", "PENJUALAN",
+                movementId, row[BarangTable.id].toJavaUuid(), "KELUAR", "PENJUALAN",
                 line.quantity, oldStock, newStock, now, account.id, account.nama,
                 id, "TRANSAKSI",
             )
@@ -203,13 +203,13 @@ internal class ExposedSalesRepository {
         }
         log(account, "TRANSAKSI_DICATAT", id, "TRANSAKSI", now)
         val result = TransaksiBuatResponse(
-            transaksi = transactionResponse(transactionId.toJavaUuid(), invoice, account.id, account.nama, method, total, received, change, "SELESAI", null, normalizedNote, now),
+            transaksi = transactionResponse(transactionId, invoice, account.id, account.nama, method, total, received, change, "SELESAI", null, normalizedNote, now),
             rincianBarang = itemResponses,
             pergerakanStok = movementResponses,
             saldoKumulatif = balance,
             notifikasi = notifications.firstOrNull(),
         )
-        TransaksiPenjualanTable.update({ TransaksiPenjualanTable.id eq transactionId }) {
+        TransaksiPenjualanTable.update({ TransaksiPenjualanTable.id eq transactionId.toKotlinUuid() }) {
             it[responseSnapshot] = gson.toJson(result)
         }
         result
@@ -276,9 +276,9 @@ internal class ExposedSalesRepository {
                 it[stokSaatIni] = after
                 it[diubahPada] = now
             }
-            val movementId = UUID.randomUUID().toKotlinUuid()
+            val movementId = UUID.randomUUID()
             PergerakanStokTable.insert {
-                it[id] = movementId
+                it[id] = movementId.toKotlinUuid()
                 it[idToko] = account.idToko
                 it[PergerakanStokTable.barangId] = productId
                 it[akunId] = account.id.toKotlinUuid()
@@ -292,7 +292,7 @@ internal class ExposedSalesRepository {
                 it[dibuatPada] = now
             }
             movements += PergerakanTransaksiResponse(
-                movementId.toJavaUuid(), item.barangId, "MASUK", "PEMBATALAN_PENJUALAN",
+                movementId, item.barangId, "MASUK", "PEMBATALAN_PENJUALAN",
                 item.jumlah, before, after, now, account.id, account.nama, id, "TRANSAKSI",
             )
         }
