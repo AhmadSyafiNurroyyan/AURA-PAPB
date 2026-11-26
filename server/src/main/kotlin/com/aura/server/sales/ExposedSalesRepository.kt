@@ -8,6 +8,7 @@ import com.aura.server.db.ItemTransaksiTable
 import com.aura.server.db.LogAktivitasTable
 import com.aura.server.db.NotifikasiTable
 import com.aura.server.db.PergerakanStokTable
+import com.aura.server.db.PengajuanPembatalanTable
 import com.aura.server.db.TokoTable
 import com.aura.server.db.TransaksiPenjualanTable
 import com.aura.server.stock.NotifikasiStokResponse
@@ -202,7 +203,7 @@ internal class ExposedSalesRepository {
         }
         log(account, "TRANSAKSI_DICATAT", id, "TRANSAKSI", now)
         val result = TransaksiBuatResponse(
-            transaksi = transactionResponse(transactionId, invoice, account.id, account.nama, method, total, received, change, "SELESAI", null, normalizedNote, now),
+            transaksi = transactionResponse(transactionId.toJavaUuid(), invoice, account.id, account.nama, method, total, received, change, "SELESAI", null, normalizedNote, now),
             rincianBarang = itemResponses,
             pergerakanStok = movementResponses,
             saldoKumulatif = balance,

@@ -97,7 +97,10 @@ internal fun ExpenseDetailScreen(
                         contentDescription = stringResource(R.string.finance_evidence),
                     )
                 }
-                if (expense.status == StatusCatatanKeuangan.TERCATAT) {
+                if (
+                    expense.jenis == JenisPengeluaran.KUSTOM &&
+                    expense.status == StatusCatatanKeuangan.TERCATAT
+                ) {
                     Primary(stringResource(R.string.finance_cancel_record), { showCancelDialog = true })
                 }
             }
