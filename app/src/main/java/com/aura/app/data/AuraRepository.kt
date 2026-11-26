@@ -1,7 +1,6 @@
 package com.aura.app.data
 
 import androidx.room.withTransaction
-import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -10,8 +9,6 @@ import java.util.UUID
 class AuraRepository(private val db: AuraDatabase) {
     private val dao = db.dao()
     private fun id() = UUID.randomUUID().toString()
-    private fun hash(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
     private fun todayCode(): String = SimpleDateFormat("yyMMdd", Locale.US).format(Date())
 
     suspend fun seed() = db.withTransaction {
@@ -19,12 +16,6 @@ class AuraRepository(private val db: AuraDatabase) {
         val storeId = "AB12CD34"
         dao.putStore(StoreEntity(storeId, "Toko Berkah Jaya", "Retail / Sembako", 4_850_000L,
             "BCA 1234567890 a.n. Budi Santoso\nMandiri 0987654321 a.n. Budi Santoso"))
-        dao.putAccount(AccountEntity("owner-1", storeId, "Budi Santoso", "owner@tokoberkah.com",
-            "owner", hash("123456"), "owner", true, "0812-3456-7890"))
-        dao.putAccount(AccountEntity("cashier-1", storeId, "Siti Aminah", "",
-            "siti.aminah", hash("123456"), "kasir", true, "0813-1111-2222"))
-        dao.putAccount(AccountEntity("cashier-2", storeId, "Andi Pratama", "",
-            "andi.pratama", hash("123456"), "kasir", true, "0813-3333-4444"))
         listOf(
             ProductEntity("BRG-001","IDM-ST-001","Indomie Soto Kuah","Makanan,Instan","pcs",3500,2800,50,10,142),
             ProductEntity("BRG-002","NBT-KJ-002","Nabati Keju 100g","Makanan","pcs",2000,1500,15,20,88),
@@ -38,8 +29,6 @@ class AuraRepository(private val db: AuraDatabase) {
             SupplierEntity("SUP-002","Agen Sembako Jaya","0857-9988-1122","Sembako & Minyak"),
             SupplierEntity("SUP-003","CV Sumber Pangan","0819-0011-2233","Malang")
         ).forEach { dao.putSupplier(it) }
-        dao.putAccount(AccountEntity("cashier-3", storeId, "Rina Wati", "",
-            "rina.wati", hash("123456"), "kasir", false, "0812-0000-0000"))
         val now = System.currentTimeMillis()
         val initial = listOf(
             TransactionEntity("INV-261117-0003",now-86_400_000,"Siti Aminah","Tunai",17_500,"Selesai"),
@@ -70,47 +59,8 @@ class AuraRepository(private val db: AuraDatabase) {
     private suspend fun log(actor: String, action: String, detail: String) {
         dao.putActivity(ActivityLogEntity(id(), actor, action, detail, System.currentTimeMillis()))
     }
-    suspend fun loginOwner(email: String, password: String): Boolean = db.withTransaction {
-        val account = dao.ownerLogin(email.trim(), hash(password)) ?: return@withTransaction false
-        dao.putSession(SessionEntity(1, account.id, account.role, account.name, account.storeId))
-        log(account.name, "Login", "Owner masuk ke aplikasi")
-        true
-    }
-    suspend fun loginCashier(storeId: String, username: String, password: String): Boolean = db.withTransaction {
-        val account = dao.cashierLogin(storeId.trim(), username.trim(), hash(password)) ?: return@withTransaction false
-        dao.putSession(SessionEntity(1, account.id, account.role, account.name, account.storeId))
-        log(account.name, "Login", "Kasir masuk ke aplikasi")
-        true
-    }
-    suspend fun registerOwner(name: String, email: String, phone: String, password: String,
-                              storeName: String, businessType: String, openingBalance: Long): Boolean {
-        if (email.isBlank() || password.length < 6 || name.isBlank() || storeName.isBlank()) return false
-        // Satu instalasi offline merepresentasikan satu toko. Pendaftaran baru memulai workspace bersih.
-        db.clearAllTables()
-        return db.withTransaction {
-        val storeId = "AU" + (100000..999999).random().toString()
-        dao.putStore(StoreEntity(storeId, storeName, businessType, openingBalance))
-        val account = AccountEntity("owner-$storeId", storeId, name, email.trim(), "owner",
-            hash(password), "owner", true, phone)
-        dao.putAccount(account)
-        dao.putSession(SessionEntity(1, account.id, "owner", name, storeId))
-        log(name, "Registrasi toko", "Membuat toko $storeName")
-        true
-        }
-    }
-    suspend fun logout() = db.withTransaction {
-        dao.session()?.let { log(it.name, "Logout", "Keluar dari aplikasi") }
-        dao.clearSession()
-    }
-    suspend fun switchAccount(emailOrUsername: String, password: String, storeId: String): Boolean = db.withTransaction {
-        val h = hash(password)
-        val account = dao.ownerLogin(emailOrUsername, h)
-            ?: dao.cashierLogin(storeId, emailOrUsername, h)
-            ?: return@withTransaction false
-        dao.putSession(SessionEntity(1, account.id, account.role, account.name, account.storeId))
-        log(account.name, "Ganti akun", "Sesi berpindah ke ${account.role}")
-        true
-    }
+
+    private suspend fun currentStore(): StoreEntity? = dao.store() ?: dao.anyStore()
 
     suspend fun saveProduct(id: String?, sku: String, name: String, categories: String, unit: String,
                             sellPrice: Long, hpp: Long, stock: Int, minStock: Int) = db.withTransaction {
@@ -128,7 +78,7 @@ class AuraRepository(private val db: AuraDatabase) {
     suspend fun restock(productId: String, quantity: Int, purchasePrice: Long, supplierId: String, note: String) = db.withTransaction {
         require(quantity > 0 && purchasePrice >= 0)
         val p = dao.product(productId) ?: error("Barang tidak ditemukan")
-        val store = dao.store() ?: error("Toko tidak ditemukan")
+        val store = currentStore() ?: error("Toko tidak ditemukan")
         val newStock = p.stock + quantity
         val newHpp = if (newStock == 0) purchasePrice else
             ((p.stock.toLong() * p.hpp) + (quantity.toLong() * purchasePrice)) / newStock
@@ -159,7 +109,7 @@ class AuraRepository(private val db: AuraDatabase) {
     }
     suspend fun recordExpense(category: String, amount: Long, note: String, isPrive: Boolean) = db.withTransaction {
         require(category.isNotBlank() && amount > 0)
-        val store = dao.store() ?: error("Toko tidak ditemukan")
+        val store = currentStore() ?: error("Toko tidak ditemukan")
         val now = System.currentTimeMillis()
         dao.putCashRecord(CashRecordEntity(id(), "expense", category, amount, note, now, isPrive = isPrive))
         dao.changeBalance(store.id, -amount)
@@ -168,7 +118,7 @@ class AuraRepository(private val db: AuraDatabase) {
     }
     suspend fun recordIncome(category: String, amount: Long, note: String, isCapital: Boolean) = db.withTransaction {
         require(category.isNotBlank() && amount > 0)
-        val store = dao.store() ?: error("Toko tidak ditemukan")
+        val store = currentStore() ?: error("Toko tidak ditemukan")
         val now = System.currentTimeMillis()
         dao.putCashRecord(CashRecordEntity(id(), "income", category, amount, note, now, isCapital = isCapital))
         dao.changeBalance(store.id, amount)
@@ -177,7 +127,7 @@ class AuraRepository(private val db: AuraDatabase) {
     }
     suspend fun checkout(cart: List<CartLineData>, method: String, received: Long): String = db.withTransaction {
         require(cart.isNotEmpty())
-        val store = dao.store() ?: error("Toko tidak ditemukan")
+        val store = currentStore() ?: error("Toko tidak ditemukan")
         val current = cart.map { line ->
             val p = dao.product(line.productId) ?: error("Barang ${line.name} tidak ditemukan")
             require(p.stock >= line.quantity) { "Stok ${p.name} tidak mencukupi. Tersedia ${p.stock}." }
@@ -228,7 +178,7 @@ class AuraRepository(private val db: AuraDatabase) {
         require(reason.isNotBlank())
         val tx = dao.transaction(invoice) ?: error("Transaksi tidak ditemukan")
         require(tx.status == "Selesai" || tx.status == "Perlu Ditinjau") { "Transaksi sudah dibatalkan." }
-        val store = dao.store() ?: error("Toko tidak ditemukan")
+        val store = currentStore() ?: error("Toko tidak ditemukan")
         dao.transactionItems(invoice).forEach { item ->
             val p = dao.product(item.productId) ?: return@forEach
             val after = p.stock + item.quantity
@@ -250,31 +200,13 @@ class AuraRepository(private val db: AuraDatabase) {
         dao.deleteSupplier(id)
         log(dao.session()?.name ?: "Owner", "Hapus supplier", id)
     }
-    suspend fun saveCashier(id: String?, name: String, username: String, password: String, phone: String) = db.withTransaction {
-        require(name.isNotBlank() && username.isNotBlank())
-        val storeId = dao.store()?.id ?: error("Toko tidak ditemukan")
-        val existing = id?.let { dao.account(it) }
-        val key = id ?: "cashier-${UUID.randomUUID()}"
-        val passHash = if (password.isNotBlank()) hash(password) else existing?.passwordHash ?: hash("123456")
-        dao.putAccount(AccountEntity(key, storeId, name, "", username, passHash, "kasir", true, phone))
-        log(dao.session()?.name ?: "Owner", if (id == null) "Tambah kasir" else "Ubah akun kasir", name)
-    }
-    suspend fun setCashierActive(id: String, active: Boolean) = db.withTransaction {
-        dao.setAccountActive(id, active)
-        log(dao.session()?.name ?: "Owner", "Ubah status akun kasir", "$id: $active")
-    }
-    suspend fun resetCashierPassword(id: String, password: String) = db.withTransaction {
-        require(password.length >= 6)
-        dao.resetPassword(id, hash(password))
-        log(dao.session()?.name ?: "Owner", "Reset kata sandi kasir", id)
-    }
     suspend fun updateBankInfo(info: String) = db.withTransaction {
-        val store = dao.store() ?: return@withTransaction
+        val store = currentStore() ?: return@withTransaction
         dao.updateBankInfo(store.id, info)
         log(dao.session()?.name ?: "Owner", "Ubah rekening bank", "Informasi rekening diperbarui")
     }
     suspend fun updateQris(uri: String) = db.withTransaction {
-        val store = dao.store() ?: return@withTransaction
+        val store = currentStore() ?: return@withTransaction
         dao.updateQris(store.id, uri)
         log(dao.session()?.name ?: "Owner", "Ubah QRIS", "Gambar QRIS diperbarui")
     }

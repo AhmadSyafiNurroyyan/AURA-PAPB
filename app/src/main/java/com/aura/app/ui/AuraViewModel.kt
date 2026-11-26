@@ -47,16 +47,7 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun dismissMessage() { _message.value = null }
     fun showMessage(value: String) { _message.value = value }
-    fun loginOwner(email: String, password: String, onResult: (Boolean)->Unit) {
-        action { val ok=repository.loginOwner(email,password); if(!ok) _message.value="Email atau kata sandi Owner tidak sesuai."; onResult(ok) }
-    }
-    fun loginCashier(storeId: String, username: String, password: String, onResult: (Boolean)->Unit) {
-        action { val ok=repository.loginCashier(storeId,username,password); if(!ok) _message.value="ID toko, username, atau kata sandi Kasir tidak sesuai."; onResult(ok) }
-    }
-    fun register(name:String,email:String,phone:String,password:String,storeName:String,type:String,balance:Long,onResult:(Boolean)->Unit) {
-        action { val ok=repository.registerOwner(name,email,phone,password,storeName,type,balance); if(!ok) _message.value="Periksa kembali data pendaftaran. Kata sandi minimal 6 karakter."; onResult(ok) }
-    }
-    fun logout() { action { repository.logout(); _cart.value=emptyList() } }
+    fun clearCart() { _cart.value = emptyList() }
     fun addToCart(product: ProductEntity) {
         if (product.stock <= 0) { _message.value = "Stok ${product.name} sedang habis."; return }
         val current=_cart.value.toMutableList()
@@ -80,7 +71,6 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
         }
         _cart.value=current
     }
-    fun clearCart() { _cart.value=emptyList() }
     fun checkout(method:String, received:Long, onSuccess:()->Unit = {}) {
         val cartNow=_cart.value
         action {
@@ -113,11 +103,6 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
         action { repository.saveSupplier(id,name,phone,address,note); _message.value="Supplier berhasil disimpan." }
     }
     fun deleteSupplier(id:String) { action { repository.deleteSupplier(id); _message.value="Supplier dihapus." } }
-    fun saveCashier(id:String?,name:String,username:String,password:String,phone:String) {
-        action { repository.saveCashier(id,name,username,password,phone); _message.value="Akun Kasir berhasil disimpan." }
-    }
-    fun setCashierActive(id:String,active:Boolean) { action { repository.setCashierActive(id,active) } }
-    fun resetCashierPassword(id:String,password:String) { action { repository.resetCashierPassword(id,password); _message.value="Kata sandi Kasir berhasil direset." } }
     fun updateBankInfo(value:String) { action { repository.updateBankInfo(value); _message.value="Informasi rekening diperbarui." } }
     fun updateQris(uri:String) { action { repository.updateQris(uri); _message.value="Gambar QRIS diperbarui." } }
     fun readNotification(id:String) { action { repository.markNotificationRead(id) } }
