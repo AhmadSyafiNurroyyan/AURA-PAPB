@@ -169,7 +169,7 @@ private data class KasirListItem(val id: UUID, val namaAkun: String, val status:
 private data class KasirListResponse(val data: List<KasirListItem>)
 private data class RevokeSessionsResponse(val jumlahSesiDiakhiri: Int)
 
-private suspend fun ApplicationCall.authenticatedAccount(auth: AuthComponents): Akun = authenticatedAccountAndJti(auth).first
+internal suspend fun ApplicationCall.authenticatedAccount(auth: AuthComponents): Akun = authenticatedAccountAndJti(auth).first
 
 private suspend fun ApplicationCall.authenticatedAccountAndJti(auth: AuthComponents): Pair<Akun, UUID> {
     val principal = principal<AkunPrincipal>() ?: throw ApiException(HttpStatusCode.Unauthorized, "SESI_TIDAK_VALID", "Sesi tidak valid atau telah berakhir.")

@@ -64,6 +64,8 @@ internal object LogAktivitasTable : Table("log_aktivitas") {
     val namaAkunSnapshot = varchar("nama_akun_snapshot", 80)
     val kategori = varchar("kategori", 10)
     val aksi = varchar("aksi", 40)
+    val referensiId = uuid("referensi_id").nullable()
+    val jenisReferensi = varchar("jenis_referensi", 30).nullable()
     val dibuatPada = long("dibuat_pada")
 
     override val primaryKey = PrimaryKey(id)

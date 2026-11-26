@@ -3,6 +3,7 @@ package com.aura.server
 import com.aura.server.config.AppConfig
 import com.aura.server.db.DatabaseFactory
 import com.aura.server.auth.authComponents
+import com.aura.server.catalog.catalogComponents
 import com.aura.server.plugins.configureAuthentication
 import com.aura.server.plugins.configureDefaultHeaders
 import com.aura.server.plugins.configureLogging
@@ -26,6 +27,7 @@ fun Application.module() {
     val config = AppConfig.fromEnvironment()
     val dataSource = DatabaseFactory.initialize(config)
     val auth = authComponents(config.jwtSecret)
+    val catalog = catalogComponents(config.uploadDirectory)
     val deletionWorker = Executors.newSingleThreadScheduledExecutor { task ->
         Thread(task, "aura-owner-deletion-worker").apply { isDaemon = true }
     }
@@ -39,11 +41,12 @@ fun Application.module() {
         deletionWorker.shutdownNow()
         dataSource.close()
     }
-    configureHttp(auth)
+    configureHttp(auth, catalog = catalog)
 }
 
 internal fun Application.configureHttp(
     auth: com.aura.server.auth.AuthComponents? = null,
+    catalog: com.aura.server.catalog.CatalogComponents? = null,
     additionalRoutes: Routing.() -> Unit = {},
 ) {
     configureSerialization()
@@ -51,5 +54,5 @@ internal fun Application.configureHttp(
     auth?.let(::configureAuthentication)
     configureLogging()
     configureDefaultHeaders()
-    configureRouting(auth, additionalRoutes)
+    configureRouting(auth, catalog, additionalRoutes)
 }
