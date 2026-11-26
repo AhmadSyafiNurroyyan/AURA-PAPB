@@ -11,6 +11,7 @@ import com.aura.app.data.remote.datasource.PenjualanRemoteDataSource
 import com.aura.app.data.remote.dto.MetodePembayaranTokoDto
 import com.aura.app.data.remote.dto.TransaksiBuatRequestDto
 import com.aura.app.data.remote.dto.TransaksiBuatResponseDto
+import com.aura.app.data.remote.dto.TransaksiDetailResponseDto
 import com.aura.app.data.remote.dto.TransaksiBatalResponseDto
 import com.aura.app.data.remote.dto.PengajuanPembatalanResponseDto
 import com.aura.app.data.remote.dto.toEntity
@@ -21,6 +22,7 @@ interface PenjualanRepository {
     fun observeTransaksiHariIni(idToko: String): Flow<List<TransaksiPenjualanEntity>>
     suspend fun refreshRiwayatHariIni(idToko: String)
     suspend fun ambilMetodePembayaran(idToko: String): MetodePembayaranTokoDto
+    suspend fun detailTransaksi(idToko: String, transaksiId: String): TransaksiDetailResponseDto
     suspend fun catatTransaksi(idToko: String, request: TransaksiBuatRequestDto): TransaksiBuatResponseDto
     suspend fun batalkanTransaksi(idToko: String, transaksiId: String, alasan: String): TransaksiBatalResponseDto
     suspend fun ajukanPembatalan(
@@ -80,6 +82,19 @@ class DefaultPenjualanRepository(
             )
         }
         return metode
+    }
+
+    override suspend fun detailTransaksi(idToko: String, transaksiId: String): TransaksiDetailResponseDto {
+        requireSession(idToko)
+        koneksi.pastikanOnline()
+        val response = remote.detailTransaksi(transaksiId)
+        db.withTransaction {
+            db.transaksiDao().upsertTransaksi(listOf(response.transaksi.toEntity(idToko)))
+            db.transaksiDao().upsertItems(
+                response.rincianBarang.map { it.toEntity(response.transaksi.id) },
+            )
+        }
+        return response
     }
 
     override suspend fun catatTransaksi(

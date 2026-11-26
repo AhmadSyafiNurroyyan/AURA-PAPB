@@ -10,6 +10,7 @@ import com.aura.app.data.remote.dto.PengajuanPembatalanResponseDto
 import com.aura.app.data.remote.dto.TransaksiBatalResponseDto
 import com.aura.app.data.remote.dto.TransaksiBuatRequestDto
 import com.aura.app.data.remote.dto.TransaksiBuatResponseDto
+import com.aura.app.data.remote.dto.TransaksiDetailResponseDto
 import com.aura.app.data.remote.dto.TransaksiListResponseDto
 import retrofit2.Response
 
@@ -23,6 +24,9 @@ class PenjualanRemoteDataSource(
 
     suspend fun listTransaksi(cursor: String?): TransaksiListResponseDto =
         unwrap(api.listTransaksi(cursor = cursor))
+
+    suspend fun detailTransaksi(transaksiId: String): TransaksiDetailResponseDto =
+        unwrap(api.detailTransaksi(transaksiId))
 
     suspend fun cancelTransaksi(
         transaksiId: String,

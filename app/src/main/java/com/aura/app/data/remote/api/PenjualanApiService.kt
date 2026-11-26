@@ -7,6 +7,7 @@ import com.aura.app.data.remote.dto.PengajuanPembatalanResponseDto
 import com.aura.app.data.remote.dto.TransaksiBatalResponseDto
 import com.aura.app.data.remote.dto.TransaksiBuatRequestDto
 import com.aura.app.data.remote.dto.TransaksiBuatResponseDto
+import com.aura.app.data.remote.dto.TransaksiDetailResponseDto
 import com.aura.app.data.remote.dto.TransaksiListResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -27,6 +28,11 @@ interface PenjualanApiService {
         @Query("limit") limit: Int = 100,
         @Query("cursor") cursor: String? = null,
     ): Response<TransaksiListResponseDto>
+
+    @GET("transaksi/{transaksiId}")
+    suspend fun detailTransaksi(
+        @Path("transaksiId") transaksiId: String,
+    ): Response<TransaksiDetailResponseDto>
 
     @POST("transaksi/{transaksiId}/batal")
     suspend fun cancelTransaksi(

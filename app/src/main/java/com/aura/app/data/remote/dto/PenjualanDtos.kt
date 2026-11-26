@@ -85,6 +85,11 @@ data class TransaksiBatalResponseDto(
     @SerializedName("saldoKumulatif") val saldoKumulatif: Long,
 )
 
+data class TransaksiDetailResponseDto(
+    @SerializedName("transaksi") val transaksi: TransaksiResponseDto,
+    @SerializedName("rincianBarang") val rincianBarang: List<ItemTransaksiResponseDto>,
+)
+
 data class TransaksiListResponseDto(
     @SerializedName("data") val data: List<TransaksiResponseDto>,
     @SerializedName("nextCursor") val nextCursor: String?,
