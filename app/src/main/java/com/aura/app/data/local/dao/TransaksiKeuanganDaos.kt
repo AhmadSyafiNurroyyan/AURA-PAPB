@@ -41,6 +41,12 @@ interface PergerakanStokDao {
     @Upsert
     suspend fun upsertAll(daftar: List<PergerakanStokEntity>)
 
+    @Query("DELETE FROM pergerakan_stok WHERE idToko = :idToko")
+    suspend fun clearByToko(idToko: String)
+
+    @Query("DELETE FROM pergerakan_stok WHERE idToko = :idToko AND barangId = :barangId")
+    suspend fun clearByBarang(idToko: String, barangId: String)
+
     @Query("DELETE FROM pergerakan_stok")
     suspend fun clearAll()
 }
