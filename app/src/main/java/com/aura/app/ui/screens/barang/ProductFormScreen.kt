@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -50,6 +51,7 @@ internal fun ProductFormScreen(
     saving: Boolean,
     onUploadPhoto: (android.content.ContentResolver, Uri) -> Unit,
     onLoadFile: (String) -> Unit,
+    onCreateCategory: (String) -> Unit,
     onManageCategories: () -> Unit,
     save: (DataBarang) -> Unit,
     back: () -> Unit,
@@ -67,6 +69,10 @@ internal fun ProductFormScreen(
     var selectedCategoryIds by rememberSaveable(entity?.id) {
         mutableStateOf(barang?.kategoriIds.orEmpty().joinToString(","))
     }
+    var categoryName by rememberSaveable(entity?.id) { mutableStateOf("") }
+    var categoryInputFocused by remember { mutableStateOf(false) }
+    var pendingCategoryName by remember { mutableStateOf<String?>(null) }
+    var categoryIdsBeforeCreate by remember { mutableStateOf<Set<String>>(emptySet()) }
     var photoFileId by rememberSaveable(entity?.id) { mutableStateOf(entity?.fotoFileId) }
     var unitMenuOpen by remember { mutableStateOf(false) }
     var supplierMenuOpen by remember { mutableStateOf(false) }
@@ -76,6 +82,18 @@ internal fun ProductFormScreen(
 
     androidx.compose.runtime.LaunchedEffect(entity?.id, uploadedPhotoFileId) {
         if (uploadedPhotoFileId != null) photoFileId = uploadedPhotoFileId
+    }
+
+    androidx.compose.runtime.LaunchedEffect(categories, pendingCategoryName) {
+        val requestedName = pendingCategoryName ?: return@LaunchedEffect
+        val createdCategory = categories.firstOrNull {
+            it.id !in categoryIdsBeforeCreate && it.nama.equals(requestedName, ignoreCase = true)
+        } ?: return@LaunchedEffect
+        val selectedIds = selectedCategoryIds.split(',').filter(String::isNotBlank).toMutableSet()
+        selectedIds.add(createdCategory.id)
+        selectedCategoryIds = selectedIds.joinToString(",")
+        categoryName = ""
+        pendingCategoryName = null
     }
 
     Page(modifier = modifier) {
@@ -116,6 +134,32 @@ internal fun ProductFormScreen(
                     },
                     label = { Text(category.nama) },
                 )
+            }
+        }
+        OutlinedTextField(
+            value = categoryName,
+            onValueChange = { categoryName = it },
+            modifier = Modifier.fillMaxWidth().onFocusChanged { categoryInputFocused = it.isFocused },
+            label = { Text(stringResource(R.string.katalog_category_name)) },
+            singleLine = true,
+        )
+        if (categoryInputFocused || categoryName.isNotBlank()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        val requestedName = categoryName.trim()
+                        categoryIdsBeforeCreate = categories.map { it.id }.toSet()
+                        pendingCategoryName = requestedName
+                        onCreateCategory(requestedName)
+                    },
+                    enabled = categoryName.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Red),
+                ) {
+                    Text(stringResource(R.string.katalog_create_category))
+                }
+                TextButton(onClick = { categoryName = ""; pendingCategoryName = null }) {
+                    Text(stringResource(R.string.screen_copy_043))
+                }
             }
         }
         TextButton(onClick = onManageCategories) { Text(stringResource(R.string.katalog_manage_categories)) }

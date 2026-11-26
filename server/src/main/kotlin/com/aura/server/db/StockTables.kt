@@ -24,6 +24,8 @@ internal object PengeluaranTable : Table("pengeluaran") {
     val dibuatPada = long("dibuat_pada")
     val dibatalkanOleh = uuid("dibatalkan_oleh").nullable()
     val dibatalkanPada = long("dibatalkan_pada").nullable()
+    val requestHash = char("request_hash", 64).nullable()
+    val responseSnapshot = text("response_snapshot").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

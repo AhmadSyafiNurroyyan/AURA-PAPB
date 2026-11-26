@@ -1,5 +1,6 @@
 package com.aura.server.sales
 
+import com.aura.server.stock.NotifikasiStokResponse
 import java.util.UUID
 
 internal data class TransaksiRequest(
@@ -64,6 +65,7 @@ internal data class TransaksiBuatResponse(
     val rincianBarang: List<ItemTransaksiResponse>,
     val pergerakanStok: List<PergerakanTransaksiResponse>,
     val saldoKumulatif: Long,
+    val notifikasi: NotifikasiStokResponse?,
 )
 
 internal data class TransaksiBatalResponse(

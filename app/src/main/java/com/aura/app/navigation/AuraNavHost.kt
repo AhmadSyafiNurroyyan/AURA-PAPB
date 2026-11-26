@@ -1,5 +1,8 @@
 package com.aura.app.navigation
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +31,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,6 +62,8 @@ import com.aura.app.data.remote.GlobalSessionHandler
 import com.aura.app.data.repository.AkunRepository
 import com.aura.app.data.repository.BarangRepository
 import com.aura.app.data.repository.AuthRepository
+import com.aura.app.data.repository.KeuanganRepository
+import com.aura.app.data.repository.PenjualanRepository
 import com.aura.app.ui.AuraViewModel
 import com.aura.app.ui.barang.KatalogEvent
 import com.aura.app.ui.barang.KatalogViewModel
@@ -69,6 +75,10 @@ import com.aura.app.ui.auth.RegisterEvent
 import com.aura.app.ui.auth.RegisterViewModel
 import com.aura.app.ui.auth.UbahKataSandiEvent
 import com.aura.app.ui.auth.UbahKataSandiViewModel
+import com.aura.app.ui.kasir.KasirEvent
+import com.aura.app.ui.kasir.KasirViewModel
+import com.aura.app.ui.keuangan.KeuanganEvent
+import com.aura.app.ui.keuangan.KeuanganViewModel
 import com.aura.app.ui.components.AvatarSheet
 import com.aura.app.ui.components.GantiAkunSheet
 import com.aura.app.ui.components.LogoutConfirmationDialog
@@ -100,12 +110,15 @@ import com.aura.app.ui.screens.keuangan.ExpenseFormScreen
 import com.aura.app.ui.screens.keuangan.ExpenseListScreen
 import com.aura.app.ui.screens.keuangan.IncomeFormScreen
 import com.aura.app.ui.screens.keuangan.IncomeListScreen
+import com.aura.app.ui.screens.keuangan.ExpenseDetailScreen
+import com.aura.app.ui.screens.keuangan.IncomeDetailScreen
 import com.aura.app.ui.screens.manajemen.ManagementScreen
 import com.aura.app.ui.screens.notifikasi.NotificationScreen
 import com.aura.app.ui.screens.profile.ActivityScreen
 import com.aura.app.ui.screens.profile.CashierAccountsScreen
 import com.aura.app.ui.screens.profile.EditProfilScreen
 import com.aura.app.ui.screens.profile.PaymentSettingsScreen
+import com.aura.app.ui.screens.profile.PengaturanTokoScreen
 import com.aura.app.ui.screens.profile.ProfileScreen
 import com.aura.app.ui.screens.profile.SettingsScreen
 import com.aura.app.ui.theme.Bg
@@ -116,11 +129,12 @@ import kotlinx.coroutines.launch
 
 private val ownerRoutes = setOf(
     Routes.DASHBOARD, Routes.MENU_MANAJEMEN, Routes.ANALISIS, Routes.PROFIL, Routes.NOTIFIKASI,
-    Routes.PENGELUARAN, Routes.CATAT_PENGELUARAN, Routes.PEMASUKAN, Routes.CATAT_PEMASUKAN,
+    Routes.PENGELUARAN, Routes.DETAIL_PENGELUARAN, Routes.CATAT_PENGELUARAN,
+    Routes.PEMASUKAN, Routes.DETAIL_PEMASUKAN, Routes.CATAT_PEMASUKAN,
     Routes.MANAJEMEN_BARANG, Routes.PROFIL_BARANG, Routes.TAMBAH_BARANG, Routes.CATAT_RESTOCK,
     Routes.PENYESUAIAN_STOK, Routes.PERGERAKAN_STOK, Routes.SUPPLIER, Routes.PROFIL_SUPPLIER,
     Routes.KELOLA_KATEGORI, Routes.RIWAYAT_AKTIVITAS,
-    Routes.PENGATURAN, Routes.MANAJEMEN_AKUN_KASIR, Routes.METODE_PEMBAYARAN,
+    Routes.PENGATURAN, Routes.MANAJEMEN_AKUN_KASIR, Routes.METODE_PEMBAYARAN, Routes.PENGATURAN_TOKO,
     Routes.K4_TRANSAKSI_BERHASIL_OWNER, Routes.RIWAYAT_HARI_INI_OWNER,
 )
 
@@ -164,8 +178,10 @@ private fun RouteNavHost(
         }
         navigation(startDestination = Routes.PENGELUARAN, route = "keuangan_tab_graph") {
             composable(Routes.PENGELUARAN) { content(Routes.PENGELUARAN, it) }
+            composable(Routes.DETAIL_PENGELUARAN) { content(Routes.DETAIL_PENGELUARAN, it) }
             composable(Routes.CATAT_PENGELUARAN) { content(Routes.CATAT_PENGELUARAN, it) }
             composable(Routes.PEMASUKAN) { content(Routes.PEMASUKAN, it) }
+            composable(Routes.DETAIL_PEMASUKAN) { content(Routes.DETAIL_PEMASUKAN, it) }
             composable(Routes.CATAT_PEMASUKAN) { content(Routes.CATAT_PEMASUKAN, it) }
         }
         navigation(startDestination = Routes.K1_BERANDA_KASIR, route = "kasir_tab_graph") {
@@ -183,6 +199,7 @@ private fun RouteNavHost(
             composable(Routes.PENGATURAN) { content(Routes.PENGATURAN, it) }
             composable(Routes.MANAJEMEN_AKUN_KASIR) { content(Routes.MANAJEMEN_AKUN_KASIR, it) }
             composable(Routes.METODE_PEMBAYARAN) { content(Routes.METODE_PEMBAYARAN, it) }
+            composable(Routes.PENGATURAN_TOKO) { content(Routes.PENGATURAN_TOKO, it) }
             composable(Routes.EDIT_PROFIL) { content(Routes.EDIT_PROFIL, it) }
             composable(Routes.UBAH_KATA_SANDI) { content(Routes.UBAH_KATA_SANDI, it) }
         }
@@ -195,6 +212,8 @@ fun AuraNavHost(
     authRepository: AuthRepository,
     akunRepository: AkunRepository,
     barangRepository: BarangRepository,
+    penjualanRepository: PenjualanRepository,
+    keuanganRepository: KeuanganRepository,
     globalSessionHandler: GlobalSessionHandler,
     koneksiChecker: KoneksiChecker,
     vm: AuraViewModel = viewModel(),
@@ -207,8 +226,15 @@ fun AuraNavHost(
     val riwayatAkun by authSessionVm.riwayatAkun.collectAsStateWithLifecycle()
     val startupChecked by authSessionVm.startupChecked.collectAsStateWithLifecycle()
     val gantiAkunState by authSessionVm.gantiAkunState.collectAsStateWithLifecycle()
+    val kasirVm: KasirViewModel = viewModel(
+        factory = KasirViewModel.factory(penjualanRepository, barangRepository),
+    )
+    val kasirState by kasirVm.uiState.collectAsStateWithLifecycle()
+    val keuanganVm: KeuanganViewModel = viewModel(
+        factory = KeuanganViewModel.factory(keuanganRepository, barangRepository),
+    )
+    val keuanganState by keuanganVm.uiState.collectAsStateWithLifecycle()
 
-    val store by vm.store.collectAsStateWithLifecycle()
     val products by vm.products.collectAsStateWithLifecycle()
     val suppliers by vm.suppliers.collectAsStateWithLifecycle()
     val transactions by vm.transactions.collectAsStateWithLifecycle()
@@ -219,9 +245,6 @@ fun AuraNavHost(
     val movements by vm.movements.collectAsStateWithLifecycle()
     val activities by vm.activities.collectAsStateWithLifecycle()
     val notifications by vm.notifications.collectAsStateWithLifecycle()
-    val cart by vm.cart.collectAsStateWithLifecycle()
-    val invoice by vm.lastInvoice.collectAsStateWithLifecycle()
-    val lastTotal by vm.lastTotal.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
     val ready by vm.ready.collectAsStateWithLifecycle()
@@ -234,14 +257,15 @@ fun AuraNavHost(
 
     var selectedProductId by rememberSaveable { mutableStateOf("BRG-001") }
     var editProductId by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedTransaction by rememberSaveable { mutableStateOf("") }
     var selectedSupplierId by rememberSaveable { mutableStateOf("") }
     var showAvatar by remember { mutableStateOf(false) }
     var showGantiAkun by remember { mutableStateOf(false) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
-    var cancelInvoice by remember { mutableStateOf<String?>(null) }
+    var cancelTransaksiId by remember { mutableStateOf<String?>(null) }
     var isOwnerCancel by remember { mutableStateOf(true) }
     var cancelReason by rememberSaveable { mutableStateOf("") }
+    var selectedExpenseId by rememberSaveable { mutableStateOf("") }
+    var selectedIncomeId by rememberSaveable { mutableStateOf("") }
     var hideBalance by rememberSaveable { mutableStateOf(true) }
     var analysisTab by rememberSaveable { mutableStateOf("Ringkasan") }
     var search by rememberSaveable { mutableStateOf("") }
@@ -272,6 +296,8 @@ fun AuraNavHost(
         }
     }
 
+    val navigateToRoute by rememberUpdatedState<(String) -> Unit> { target -> go(target) }
+
     fun back() {
         if (route == Routes.UBAH_KATA_SANDI_WAJIB) {
             return
@@ -293,6 +319,70 @@ fun AuraNavHost(
             wajibGantiSandi -> root(Routes.UBAH_KATA_SANDI_WAJIB)
             peran == Peran.OWNER -> root(Routes.DASHBOARD)
             else -> root(Routes.K1_BERANDA_KASIR)
+        }
+    }
+
+    LaunchedEffect(sesiAktif?.akunId, sesiAktif?.idToko) {
+        kasirVm.sambungkanSesi(sesiAktif)
+        keuanganVm.sambungkanSesi(sesiAktif)
+    }
+
+    LaunchedEffect(route, sesiAktif?.idToko) {
+        when (route) {
+            Routes.K3_PEMBAYARAN -> kasirVm.muatMetodePembayaran()
+            Routes.RIWAYAT_HARI_INI, Routes.RIWAYAT_HARI_INI_OWNER -> kasirVm.muatRiwayatHariIni()
+        }
+    }
+
+    LaunchedEffect(kasirVm) {
+        kasirVm.events.collect { event ->
+            when (event) {
+                is KasirEvent.TampilkanPesan -> showSnackbar(
+                    event.pesan.detail ?: context.getString(event.pesan.fallback),
+                )
+                is KasirEvent.TransaksiBerhasil -> navigateToRoute(
+                    if (event.olehOwner) {
+                        Routes.K4_TRANSAKSI_BERHASIL_OWNER
+                    } else {
+                        Routes.K4_TRANSAKSI_BERHASIL
+                    },
+                )
+                is KasirEvent.PembatalanBerhasil -> {
+                    cancelTransaksiId = null
+                    cancelReason = ""
+                    showSnackbar(
+                        context.getString(
+                            if (event.olehOwner) {
+                                R.string.kasir_transaction_cancelled
+                            } else {
+                                R.string.kasir_cancel_request_sent
+                            },
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(keuanganVm) {
+        keuanganVm.events.collect { event ->
+            when (event) {
+                KeuanganEvent.FormTersimpan -> back()
+                KeuanganEvent.PembatalanBerhasil -> back()
+                is KeuanganEvent.TampilkanPesan -> showSnackbar(event.teks)
+            }
+        }
+    }
+
+    LaunchedEffect(route, sesiAktif?.idToko) {
+        if (route in setOf(
+                Routes.PENGELUARAN,
+                Routes.PEMASUKAN,
+                Routes.METODE_PEMBAYARAN,
+                Routes.PENGATURAN_TOKO,
+            )
+        ) {
+            keuanganVm.refresh()
         }
     }
 
@@ -544,6 +634,7 @@ fun AuraNavHost(
                         onUbahSandi = { go(Routes.UBAH_KATA_SANDI) },
                         onAkunKasir = { go(Routes.MANAJEMEN_AKUN_KASIR) },
                         onMetodePembayaran = { go(Routes.METODE_PEMBAYARAN) },
+                        onPengaturanToko = { go(Routes.PENGATURAN_TOKO) },
                     )
 
                     Routes.MANAJEMEN_AKUN_KASIR -> {
@@ -568,29 +659,75 @@ fun AuraNavHost(
                         )
                     }
 
-                    Routes.DASHBOARD -> DashboardScreen(store, products, transactions, cashRecords, hideBalance, { hideBalance = !hideBalance }, { go(it) })
+                    Routes.DASHBOARD -> DashboardScreen(keuanganState.toko, products, transactions, cashRecords, hideBalance, { hideBalance = !hideBalance }, { go(it) })
                     Routes.MENU_MANAJEMEN -> ManagementScreen(go = { go(it) })
                     Routes.ANALISIS -> AnalysisScreen(analysisTab, { analysisTab = it }, products, transactions, transactionItems, cashRecords, adjustments, restocks, movements)
                     Routes.NOTIFIKASI -> NotificationScreen(notifications, { vm.readNotification(it) }, { vm.readAllNotifications() }, { go(it) })
                     Routes.PENGELUARAN -> ExpenseListScreen(
-                        records = cashRecords.filter { it.kind == "expense" },
-                        restocks = restocks,
-                        products = products,
-                        add = { go(Routes.CATAT_PENGELUARAN) },
+                        uiState = keuanganState,
+                        onAdd = { go(Routes.CATAT_PENGELUARAN) },
+                        onDetail = {
+                            selectedExpenseId = it
+                            go(Routes.DETAIL_PENGELUARAN)
+                        },
+                        onRefresh = keuanganVm::refresh,
                     )
-                    Routes.CATAT_PENGELUARAN -> ExpenseFormScreen(
-                        save = { category, amount, note, prive -> vm.expense(category, amount, note, prive); back() },
-                        back = { back() },
-                    )
+                    Routes.DETAIL_PENGELUARAN -> {
+                        LaunchedEffect(selectedExpenseId) {
+                            if (selectedExpenseId.isNotBlank()) keuanganVm.muatDetailPengeluaran(selectedExpenseId)
+                        }
+                        ExpenseDetailScreen(
+                            uiState = keuanganState,
+                            onCancel = keuanganVm::batalkanPengeluaran,
+                            onLoadFile = keuanganVm::muatFile,
+                        )
+                    }
+                    Routes.CATAT_PENGELUARAN -> {
+                        LaunchedEffect(backStackEntry) { keuanganVm.siapkanFormPengeluaran() }
+                        ExpenseFormScreen(
+                            uiState = keuanganState,
+                            onTitleChange = keuanganVm::ubahJudulPengeluaran,
+                            onTypeChange = keuanganVm::ubahJenisBiaya,
+                            onAmountChange = keuanganVm::ubahNominalPengeluaran,
+                            onNoteChange = keuanganVm::ubahCatatanPengeluaran,
+                            onUploadEvidence = keuanganVm::unggahBukti,
+                            onRemoveEvidence = keuanganVm::resetBuktiUnggahan,
+                            onSave = keuanganVm::catatPengeluaran,
+                            onBack = { back() },
+                        )
+                    }
                     Routes.PEMASUKAN -> IncomeListScreen(
-                        transactions = transactions,
-                        records = cashRecords.filter { it.kind == "income" },
-                        add = { go(Routes.CATAT_PEMASUKAN) },
+                        uiState = keuanganState,
+                        onAdd = { go(Routes.CATAT_PEMASUKAN) },
+                        onDetail = { id, _ ->
+                            selectedIncomeId = id
+                            go(Routes.DETAIL_PEMASUKAN)
+                        },
+                        onRefresh = keuanganVm::refresh,
                     )
-                    Routes.CATAT_PEMASUKAN -> IncomeFormScreen(
-                        save = { category, amount, note, capital -> vm.income(category, amount, note, capital); back() },
-                        back = { back() },
-                    )
+                    Routes.DETAIL_PEMASUKAN -> {
+                        LaunchedEffect(selectedIncomeId) {
+                            if (selectedIncomeId.isNotBlank()) keuanganVm.muatDetailPemasukan(selectedIncomeId)
+                        }
+                        IncomeDetailScreen(
+                            uiState = keuanganState,
+                            onCancel = keuanganVm::batalkanPemasukan,
+                            onLoadFile = keuanganVm::muatFile,
+                        )
+                    }
+                    Routes.CATAT_PEMASUKAN -> {
+                        LaunchedEffect(backStackEntry) { keuanganVm.siapkanFormPemasukan() }
+                        IncomeFormScreen(
+                            uiState = keuanganState,
+                            onTitleChange = keuanganVm::ubahJudulPemasukan,
+                            onAmountChange = keuanganVm::ubahNominalPemasukan,
+                            onNoteChange = keuanganVm::ubahCatatanPemasukan,
+                            onUploadEvidence = keuanganVm::unggahBukti,
+                            onRemoveEvidence = keuanganVm::resetBuktiUnggahan,
+                            onSave = keuanganVm::catatPemasukan,
+                            onBack = { back() },
+                        )
+                    }
                     Routes.MANAJEMEN_BARANG -> {
                         val katalogVm: KatalogViewModel = viewModel(
                             backStackEntry,
@@ -696,6 +833,7 @@ fun AuraNavHost(
                             saving = katalogState.isSaving,
                             onUploadPhoto = katalogVm::unggahFoto,
                             onLoadFile = katalogVm::muatFile,
+                            onCreateCategory = { katalogVm.simpanKategori(null, it) },
                             onManageCategories = { go(Routes.KELOLA_KATEGORI) },
                             save = { katalogVm.simpanBarang(it, editProductId) },
                             back = { back() },
@@ -747,7 +885,9 @@ fun AuraNavHost(
                             suppliers = katalogState.supplier,
                             initialProductId = selectedProductId,
                             saving = katalogState.isSaving,
+                            creatingSupplier = katalogState.isSavingSupplier,
                             save = katalogVm::catatRestock,
+                            createSupplier = { katalogVm.simpanSupplier(null, it, null, null) },
                             manageSuppliers = { go(Routes.SUPPLIER) },
                             back = { back() },
                         )
@@ -789,7 +929,6 @@ fun AuraNavHost(
                         val katalogState by katalogVm.uiState.collectAsStateWithLifecycle()
                         LaunchedEffect(sesiAktif?.idToko, selectedProductId) {
                             sesiAktif?.idToko?.let {
-                                katalogVm.muat(it)
                                 katalogVm.muatPergerakan(it, selectedProductId.takeIf(String::isNotBlank))
                             }
                         }
@@ -798,8 +937,17 @@ fun AuraNavHost(
                                 selectedProductId.isBlank() || it.barangId == selectedProductId
                             },
                             nextCursor = katalogState.pergerakanNextCursor,
+                            loading = katalogState.isLoadingPergerakan,
                             loadingMore = katalogState.isLoadingMorePergerakan,
                             error = katalogState.errorMessage,
+                            retry = {
+                                sesiAktif?.idToko?.let {
+                                    katalogVm.muatPergerakan(
+                                        it,
+                                        selectedProductId.takeIf(String::isNotBlank),
+                                    )
+                                }
+                            },
                             loadMore = { katalogVm.muatPergerakanBerikutnya(selectedProductId) },
                         )
                     }
@@ -865,7 +1013,24 @@ fun AuraNavHost(
                         )
                     }
                     Routes.RIWAYAT_AKTIVITAS -> ActivityScreen(activities)
-                    Routes.METODE_PEMBAYARAN -> PaymentSettingsScreen(store?.bankInfo ?: "", { vm.updateBankInfo(it) }, { vm.updateQris(it) })
+                    Routes.METODE_PEMBAYARAN -> PaymentSettingsScreen(
+                        uiState = keuanganState,
+                        onRecipientChange = keuanganVm::ubahNamaPenerima,
+                        onAccountInfoChange = keuanganVm::ubahInfoRekening,
+                        onUploadQris = keuanganVm::unggahQris,
+                        onRemoveQris = keuanganVm::hapusQris,
+                        onSave = keuanganVm::simpanMetodePembayaran,
+                        onLoadFile = keuanganVm::muatFile,
+                    )
+                    Routes.PENGATURAN_TOKO -> PengaturanTokoScreen(
+                        uiState = keuanganState,
+                        onNameChange = keuanganVm::ubahNamaToko,
+                        onBusinessTypeChange = keuanganVm::ubahJenisUsaha,
+                        onAddressChange = keuanganVm::ubahAlamatToko,
+                        onOpeningBalanceChange = keuanganVm::ubahSaldoAwal,
+                        onSaveStore = keuanganVm::simpanPengaturanToko,
+                        onSaveOpeningBalance = keuanganVm::koreksiSaldoAwal,
+                    )
                     Routes.K1_BERANDA_KASIR -> {
                         val katalogVm: KatalogViewModel = viewModel(
                             backStackEntry,
@@ -887,61 +1052,92 @@ fun AuraNavHost(
                             fileBytes = katalogState.fileBytes,
                             failedFileIds = katalogState.fileIdsGagalDimuat,
                             loadFile = katalogVm::muatFile,
-                            add = { barang ->
-                                vm.addToCart(
-                                    com.aura.app.data.ProductEntity(
-                                        id = barang.id,
-                                        sku = barang.sku.orEmpty(),
-                                        name = barang.nama,
-                                        categories = katalogState.barang.firstOrNull { it.barang.id == barang.id }?.kategori.orEmpty().joinToString(","),
-                                        unit = barang.satuan,
-                                        sellPrice = barang.hargaJual,
-                                        hpp = barang.hppRataRata,
-                                        stock = barang.stokSaatIni,
-                                        minStock = barang.stokMinimum,
-                                    ),
-                                )
-                            },
+                            add = kasirVm::tambahBarang,
                             cart = { go(Routes.K2_CATAT_TRANSAKSI) },
                             history = { go(Routes.RIWAYAT_HARI_INI) },
                             avatar = { showAvatar = true },
                         )
                     }
                     Routes.K2_CATAT_TRANSAKSI -> CartScreen(
-                        cart = cart,
-                        change = { id, delta -> vm.changeCart(id, delta) },
+                        cart = kasirState.keranjang,
+                        change = kasirVm::ubahJumlah,
                         pay = { go(Routes.K3_PEMBAYARAN) },
                         back = { back() },
                     )
-                    Routes.K3_PEMBAYARAN -> PaymentScreen(
-                        cart.sumOf { it.unitPrice * it.quantity },
-                        { method, received ->
-                            vm.checkout(method, received) {
-                                go(if (sesiAktif?.peran == Peran.OWNER) Routes.K4_TRANSAKSI_BERHASIL_OWNER else Routes.K4_TRANSAKSI_BERHASIL)
-                            }
-                        },
-                        { back() },
-                    )
+                    Routes.K3_PEMBAYARAN -> {
+                        val qrisFileId = kasirState.metodePembayaran?.qrisFileId?.takeIf(String::isNotBlank)
+                        PaymentScreen(
+                            total = kasirState.keranjang.sumOf { it.hargaJual * it.jumlah },
+                            metodePembayaran = kasirState.metodePembayaran,
+                            isLoadingMetode = kasirState.isLoadingMetodePembayaran,
+                            metodeError = kasirState.metodePembayaranError?.let {
+                                it.detail ?: context.getString(it.fallback)
+                            },
+                            retryMetode = kasirVm::muatMetodePembayaran,
+                            qrisBytes = kasirState.qrisBytes.takeIf {
+                                kasirState.qrisFileIdLoaded == qrisFileId
+                            },
+                            qrisLoading = qrisFileId != null &&
+                                kasirState.qrisFileIdLoading == qrisFileId,
+                            qrisError = kasirState.qrisError?.takeIf {
+                                kasirState.qrisFileIdFailed == qrisFileId
+                            }?.let { it.detail ?: context.getString(it.fallback) },
+                            loadQris = kasirVm::muatQris,
+                            retryQris = {
+                                qrisFileId?.let { kasirVm.muatQris(it, ulangi = true) }
+                            },
+                            isSaving = kasirState.isSavingTransaksi,
+                            requestTertunda = kasirState.permintaanTransaksiTertunda,
+                            checkoutError = kasirState.checkoutError?.let {
+                                it.detail ?: context.getString(it.fallback)
+                            },
+                            checkout = kasirVm::selesaikanTransaksi,
+                            copyInfoRekening = { info ->
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(
+                                    ClipData.newPlainText(
+                                        context.getString(R.string.kasir_transfer_info_title),
+                                        info,
+                                    ),
+                                )
+                                showSnackbar(context.getString(R.string.kasir_account_copied))
+                            },
+                            back = { back() },
+                        )
+                    }
                     Routes.K4_TRANSAKSI_BERHASIL, Routes.K4_TRANSAKSI_BERHASIL_OWNER -> SuccessScreen(
-                        invoice,
-                        lastTotal,
+                        kasirState.invoiceTerakhir,
+                        kasirState.totalTerakhir,
                         sesiAktif?.peran == Peran.OWNER,
                         { root(Routes.K1_BERANDA_KASIR) },
                         { go(if (sesiAktif?.peran == Peran.OWNER) Routes.RIWAYAT_HARI_INI_OWNER else Routes.RIWAYAT_HARI_INI) },
                         { root(Routes.DASHBOARD) },
                     )
                     Routes.RIWAYAT_HARI_INI, Routes.RIWAYAT_HARI_INI_OWNER -> HistoryScreen(
-                        transactions,
-                        { tx ->
-                            selectedTransaction = tx.invoiceNo
-                            isOwnerCancel = sesiAktif?.peran == Peran.OWNER
-                            cancelInvoice = tx.invoiceNo
+                        items = kasirState.transaksiHariIni,
+                        isLoading = kasirState.isLoadingRiwayat,
+                        errorMessage = kasirState.riwayatError?.let {
+                            it.detail ?: context.getString(it.fallback)
                         },
-                        sesiAktif?.peran == Peran.KASIR,
+                        retry = kasirVm::muatRiwayatHariIni,
+                        openCancel = { transaksi ->
+                            isOwnerCancel = sesiAktif?.peran == Peran.OWNER
+                            cancelTransaksiId = transaksi.id
+                            cancelReason = kasirState.pengajuanPembatalanTertunda[transaksi.id]?.alasan.orEmpty()
+                        },
+                        isCashier = sesiAktif?.peran == Peran.KASIR,
+                        submittedCancellationIds = kasirState.pengajuanPembatalanTertunda
+                            .filterValues { it.terkirim }
+                            .keys,
                     )
                     else -> WelcomeScreen({ root(Routes.LOGIN) }, { root(Routes.REGISTER_STEP1) })
                 }
-                if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = Red)
+                if (
+                    busy || kasirState.isSavingTransaksi || kasirState.isSavingPembatalan ||
+                    kasirState.isLoadingRiwayat || kasirState.isLoadingMetodePembayaran
+                ) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = Red)
+                }
             }
         }
     }
@@ -983,26 +1179,81 @@ fun AuraNavHost(
         )
     }
 
-    if (cancelInvoice != null) {
+    cancelTransaksiId?.let { transaksiId ->
         AlertDialog(
-            onDismissRequest = { cancelInvoice = null; cancelReason = "" },
-            title = { Text(if (isOwnerCancel) "Batalkan Transaksi?" else "Ajukan Pembatalan?") },
+            onDismissRequest = {
+                if (!kasirState.isSavingPembatalan) {
+                    cancelTransaksiId = null
+                    cancelReason = ""
+                }
+            },
+            title = {
+                Text(
+                    stringResource(
+                        if (isOwnerCancel) {
+                            R.string.kasir_cancel_owner_title
+                        } else {
+                            R.string.kasir_cancel_cashier_title
+                        },
+                    ),
+                )
+            },
             text = {
                 Column {
-                    Text("Alasan wajib diisi. Stok akan dikembalikan setelah pembatalan Owner disetujui.", fontSize = 12.sp)
-                    OutlinedTextField(cancelReason, { cancelReason = it }, label = { Text("Alasan pembatalan") }, modifier = Modifier.fillMaxWidth())
+                    Text(
+                        stringResource(
+                            if (isOwnerCancel) {
+                                R.string.kasir_cancel_owner_message
+                            } else {
+                                R.string.kasir_cancel_cashier_message
+                            },
+                        ),
+                        fontSize = 12.sp,
+                    )
+                    OutlinedTextField(
+                        value = cancelReason,
+                        onValueChange = { cancelReason = it },
+                        label = { Text(stringResource(R.string.kasir_cancel_reason_label)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !kasirState.isSavingPembatalan &&
+                            (isOwnerCancel || transaksiId !in kasirState.pengajuanPembatalanTertunda),
+                    )
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    if (cancelReason.isNotBlank()) {
-                        vm.cancelTransaction(cancelInvoice!!, cancelReason, !isOwnerCancel)
-                        cancelInvoice = null
-                        cancelReason = ""
-                    }
-                }) { Text(if (isOwnerCancel) "Batalkan" else "Kirim Pengajuan", color = Red) }
+                TextButton(
+                    enabled = cancelReason.isNotBlank() && !kasirState.isSavingPembatalan,
+                    onClick = {
+                        kasirVm.batalkanAtauAjukan(
+                            transaksiId = transaksiId,
+                            alasan = cancelReason.trim(),
+                            olehOwner = isOwnerCancel,
+                        )
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            if (isOwnerCancel) {
+                                R.string.kasir_cancel_owner_confirm
+                            } else {
+                                R.string.kasir_cancel_cashier_confirm
+                            },
+                        ),
+                        color = Red,
+                    )
+                }
             },
-            dismissButton = { TextButton(onClick = { cancelInvoice = null; cancelReason = "" }) { Text("Kembali") } },
+            dismissButton = {
+                TextButton(
+                    enabled = !kasirState.isSavingPembatalan,
+                    onClick = {
+                        cancelTransaksiId = null
+                        cancelReason = ""
+                    },
+                ) {
+                    Text(stringResource(R.string.kasir_cancel_dismiss))
+                }
+            },
         )
     }
 
@@ -1025,8 +1276,10 @@ private fun routeTitle(route: String) = mapOf(
     Routes.UBAH_KATA_SANDI to "Ubah Kata Sandi",
     Routes.NOTIFIKASI to "Notifikasi",
     Routes.PENGELUARAN to "Pengeluaran",
+    Routes.DETAIL_PENGELUARAN to "Detail Pengeluaran",
     Routes.CATAT_PENGELUARAN to "Catat Pengeluaran",
     Routes.PEMASUKAN to "Pemasukan",
+    Routes.DETAIL_PEMASUKAN to "Detail Pemasukan",
     Routes.CATAT_PEMASUKAN to "Catat Pemasukan",
     Routes.MANAJEMEN_BARANG to "Manajemen Barang",
     Routes.PROFIL_BARANG to "Profil Barang",
@@ -1041,8 +1294,9 @@ private fun routeTitle(route: String) = mapOf(
     Routes.PENGATURAN to "Pengaturan",
     Routes.MANAJEMEN_AKUN_KASIR to "Akun Kasir",
     Routes.METODE_PEMBAYARAN to "Metode Pembayaran",
+    Routes.PENGATURAN_TOKO to "Pengaturan Toko",
     Routes.K1_BERANDA_KASIR to "Beranda Kasir",
-    Routes.K2_CATAT_TRANSAKSI to "Keranjang",
+    Routes.K2_CATAT_TRANSAKSI to "Catat Transaksi",
     Routes.K3_PEMBAYARAN to "Pembayaran",
     Routes.K4_TRANSAKSI_BERHASIL to "Transaksi Berhasil",
     Routes.K4_TRANSAKSI_BERHASIL_OWNER to "Transaksi Berhasil",

@@ -23,13 +23,16 @@ internal class SalesService(private val repository: ExposedSalesRepository = Exp
         return repository.create(account, request, hash(request))
     }
 
-    fun list(account: Akun, hari: String?, limit: Int?, cursor: String?): TransaksiListResponse {
+    fun list(account: Akun, hari: String?, status: String?, limit: Int?, cursor: String?): TransaksiListResponse {
         val pageSize = limit ?: DEFAULT_PAGE_SIZE
         if (pageSize !in 1..MAX_PAGE_SIZE) invalid("LIMIT_TIDAK_VALID", "Jumlah data per halaman tidak valid.")
         if (hari != null && runCatching { java.time.LocalDate.parse(hari) }.isFailure) {
             invalid("HARI_TIDAK_VALID", "Tanggal riwayat tidak valid.")
         }
-        return repository.list(account, hari, pageSize, cursor)
+        if (status != null && status !in TRANSACTION_STATUSES) {
+            invalid("STATUS_TRANSAKSI_TIDAK_VALID", "Status transaksi tidak valid.")
+        }
+        return repository.list(account, hari, status, pageSize, cursor)
     }
 
     fun detail(account: Akun, id: UUID): TransaksiDetailResponse = repository.detail(account, id)
@@ -72,6 +75,7 @@ internal class SalesService(private val repository: ExposedSalesRepository = Exp
         const val MAX_PAGE_SIZE = 100
         const val MAX_NOTE_LENGTH = 1000
         const val MAX_REASON_LENGTH = 500
+        val TRANSACTION_STATUSES = setOf("SELESAI", "DIBATALKAN")
     }
 }
 

@@ -28,6 +28,7 @@ internal fun Route.salesRoutes(auth: AuthComponents, sales: SalesComponents) {
                     sales.service.list(
                         account,
                         call.request.queryParameters["hari"],
+                        call.request.queryParameters["status"],
                         call.request.queryParameters["limit"]?.let(::parseSalesLimit),
                         call.request.queryParameters["cursor"],
                     )

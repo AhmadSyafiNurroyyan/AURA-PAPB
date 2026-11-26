@@ -136,7 +136,7 @@ internal class StockService(
 
     private fun requireOwner(account: Akun) {
         if (account.peran != Peran.OWNER) {
-            throw ApiException(HttpStatusCode.Forbidden, "AKSES_DITOLAK", "Fitur ini hanya dapat digunakan Owner.")
+            throw ApiException(HttpStatusCode.Forbidden, "AKSES_DITOLAK", "Hanya Owner yang dapat mengubah data ini.")
         }
     }
 

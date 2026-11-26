@@ -1,6 +1,7 @@
 package com.aura.server.sales
 
 import com.aura.server.auth.Akun
+import com.aura.server.core.StatusStokEvaluator
 import com.aura.server.db.AkunTable
 import com.aura.server.db.BarangTable
 import com.aura.server.db.ItemTransaksiTable
@@ -9,6 +10,8 @@ import com.aura.server.db.NotifikasiTable
 import com.aura.server.db.PergerakanStokTable
 import com.aura.server.db.TokoTable
 import com.aura.server.db.TransaksiPenjualanTable
+import com.aura.server.stock.NotifikasiStokResponse
+import com.aura.server.stock.createStockNotification
 import com.google.gson.Gson
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
@@ -108,6 +111,7 @@ internal class ExposedSalesRepository {
         val transactionId = id.toKotlinUuid()
         val movementResponses = mutableListOf<PergerakanTransaksiResponse>()
         val itemResponses = mutableListOf<ItemTransaksiResponse>()
+        val notifications = mutableListOf<NotifikasiStokResponse>()
         val storeRow = TokoTable.selectAll().where { TokoTable.idToko eq account.idToko }.single()
         var balance = storeRow[TokoTable.saldoKumulatif]
 
@@ -142,6 +146,15 @@ internal class ExposedSalesRepository {
                 it[diubahPada] = now
             }
             if (updated != 1) conflict("STOK_BERUBAH", "Stok ${row[BarangTable.nama]} berubah. Muat ulang sebelum menyelesaikan transaksi.")
+            createStockNotification(
+                account.idToko,
+                row[BarangTable.id].toJavaUuid(),
+                row[BarangTable.nama],
+                newStock,
+                StatusStokEvaluator.evaluate(oldStock, row[BarangTable.stokMinimum]),
+                StatusStokEvaluator.evaluate(newStock, row[BarangTable.stokMinimum]),
+                now,
+            )?.let(notifications::add)
             val itemId = UUID.randomUUID().toKotlinUuid()
             ItemTransaksiTable.insert {
                 it[id] = itemId
@@ -193,6 +206,7 @@ internal class ExposedSalesRepository {
             rincianBarang = itemResponses,
             pergerakanStok = movementResponses,
             saldoKumulatif = balance,
+            notifikasi = notifications.firstOrNull(),
         )
         TransaksiPenjualanTable.update({ TransaksiPenjualanTable.id eq transactionId }) {
             it[responseSnapshot] = gson.toJson(result)
@@ -200,7 +214,7 @@ internal class ExposedSalesRepository {
         result
     }
 
-    fun list(account: Akun, hari: String?, limit: Int, cursor: String?): TransaksiListResponse = transaction {
+    fun list(account: Akun, hari: String?, status: String?, limit: Int, cursor: String?): TransaksiListResponse = transaction {
         val day = try {
             (hari?.let(java.time.LocalDate::parse) ?: Instant.now().atZone(WIB).toLocalDate())
         } catch (_: Exception) {
@@ -214,6 +228,7 @@ internal class ExposedSalesRepository {
         if (account.peran.name == "KASIR") {
             condition = condition and (TransaksiPenjualanTable.akunId eq account.id.toKotlinUuid())
         }
+        if (status != null) condition = condition and (TransaksiPenjualanTable.status eq status)
         val position = cursor?.let(::decodeCursor)
         if (position != null) {
             condition = condition and (

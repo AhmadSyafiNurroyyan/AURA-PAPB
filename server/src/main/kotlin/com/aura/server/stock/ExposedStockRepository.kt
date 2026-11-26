@@ -11,7 +11,6 @@ import com.aura.server.db.FileTable
 import com.aura.server.db.HargaBeliSupplierTable
 import com.aura.server.db.KategoriTable
 import com.aura.server.db.LogAktivitasTable
-import com.aura.server.db.NotifikasiTable
 import com.aura.server.db.PenyesuaianStokTable
 import com.aura.server.db.PergerakanStokTable
 import com.aura.server.db.PengeluaranTable
@@ -19,7 +18,6 @@ import com.aura.server.db.RestockTable
 import com.aura.server.db.SupplierTable
 import com.aura.server.db.TokoTable
 import com.aura.server.core.HppCalculator
-import com.aura.server.core.StatusStok
 import com.aura.server.core.StatusStokEvaluator
 import com.google.gson.Gson
 import org.jetbrains.exposed.v1.core.Op
@@ -529,38 +527,6 @@ internal class ExposedStockRepository : StockRepository {
             dibuatPada = row[BarangTable.dibuatPada],
             diubahPada = row[BarangTable.diubahPada],
         )
-    }
-
-    private fun createStockNotification(
-        storeId: String,
-        barangId: UUID,
-        namaBarang: String,
-        stock: Int,
-        previous: StatusStok,
-        current: StatusStok,
-        now: Long,
-    ): NotifikasiStokResponse? {
-        if (previous == current || current == StatusStok.AMAN) return null
-        val type = if (current == StatusStok.HABIS) "STOK_HABIS" else "STOK_MENIPIS"
-        val title = if (current == StatusStok.HABIS) "Stok habis" else "Stok menipis"
-        val message = if (current == StatusStok.HABIS) {
-            "$namaBarang tidak memiliki stok."
-        } else {
-            "Stok $namaBarang tersisa $stock."
-        }
-        val id = UUID.randomUUID()
-        NotifikasiTable.insert {
-            it[NotifikasiTable.id] = id.toKotlinUuid()
-            it[idToko] = storeId
-            it[jenis] = type
-            it[judul] = title
-            it[pesan] = message
-            it[referensiId] = barangId.toKotlinUuid()
-            it[jenisReferensi] = "BARANG"
-            it[dibuatPada] = now
-            it[dibacaPada] = null
-        }
-        return NotifikasiStokResponse(id, type, title, message, barangId, "BARANG", now, null)
     }
 
     private fun log(account: Akun, action: String, referenceId: UUID, referenceType: String, at: Long) {
