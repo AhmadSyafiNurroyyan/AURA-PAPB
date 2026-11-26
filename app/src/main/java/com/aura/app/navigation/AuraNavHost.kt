@@ -696,6 +696,7 @@ fun AuraNavHost(
                             saving = katalogState.isSaving,
                             onUploadPhoto = katalogVm::unggahFoto,
                             onLoadFile = katalogVm::muatFile,
+                            onCreateCategory = { katalogVm.simpanKategori(null, it) },
                             onManageCategories = { go(Routes.KELOLA_KATEGORI) },
                             save = { katalogVm.simpanBarang(it, editProductId) },
                             back = { back() },

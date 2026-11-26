@@ -305,6 +305,7 @@
     <string name="katalog_delete_supplier_confirmation">Supplier yang sudah dipakai tidak dapat dihapus dan akan dinonaktifkan.</string>
     <string name="katalog_category_name">Nama kategori</string>
     <string name="katalog_add_category">Tambah Kategori</string>
+    <string name="katalog_create_category">Buat</string>
     <string name="katalog_category_product_count">%1$d Barang memakai kategori ini</string>
     <string name="katalog_delete_category_title">Hapus Kategori?</string>
     <string name="katalog_delete_category_confirmation">%1$d Barang akan dilepas dari kategori ini. Barang tidak ikut dihapus.</string>
