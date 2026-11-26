@@ -158,7 +158,7 @@ internal class ExposedSalesRepository {
             )?.let(notifications::add)
             val itemId = UUID.randomUUID()
             ItemTransaksiTable.insert {
-                it[id] = itemId.toKotlinUuid()
+                it[ItemTransaksiTable.id] = itemId.toKotlinUuid()
                 it[idToko] = account.idToko
                 it[transaksiId] = transactionId.toKotlinUuid()
                 it[barangId] = row[BarangTable.id]
@@ -170,7 +170,7 @@ internal class ExposedSalesRepository {
             }
             val movementId = UUID.randomUUID()
             PergerakanStokTable.insert {
-                it[id] = movementId.toKotlinUuid()
+                it[PergerakanStokTable.id] = movementId.toKotlinUuid()
                 it[idToko] = account.idToko
                 it[PergerakanStokTable.barangId] = row[BarangTable.id]
                 it[akunId] = account.id.toKotlinUuid()
@@ -278,7 +278,7 @@ internal class ExposedSalesRepository {
             }
             val movementId = UUID.randomUUID()
             PergerakanStokTable.insert {
-                it[id] = movementId.toKotlinUuid()
+                it[PergerakanStokTable.id] = movementId.toKotlinUuid()
                 it[idToko] = account.idToko
                 it[PergerakanStokTable.barangId] = productId
                 it[akunId] = account.id.toKotlinUuid()
