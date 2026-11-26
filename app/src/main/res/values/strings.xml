@@ -16,10 +16,9 @@
     <string name="screen_copy_014">Ringkasan Stok</string>
     <string name="screen_copy_015">AURA</string>
     <string name="screen_copy_016">Masuk ke AURA</string>
-    <string name="screen_copy_017">Gunakan akun lokal untuk melanjutkan</string>
+    <string name="screen_copy_017">Masuk untuk mengelola toko Anda</string>
     <string name="screen_copy_018">Kata Sandi</string>
     <string name="screen_copy_019">Belum punya akun? Buat Akun</string>
-    <string name="screen_copy_020">Akun demo: owner@tokoberkah.com / 123456\nKasir: AB12CD34/siti.aminah / 123456</string>
     <string name="screen_copy_021">Daftar Akun AURA</string>
     <string name="screen_copy_022">Nama Lengkap</string>
     <string name="screen_copy_023">Email</string>
@@ -155,4 +154,104 @@
     <string name="screen_copy_153">Ganti Akun</string>
     <string name="screen_copy_154">Keluar Akun</string>
     <string name="screen_copy_155">Pengaturan</string>
+
+    <!-- L09: Auth, Profil, Ganti Akun, Ubah Kata Sandi, & Manajemen Kasir -->
+    <string name="role_owner">Owner</string>
+    <string name="role_kasir">Kasir</string>
+    <string name="auth_label_id_toko">ID Toko</string>
+    <string name="auth_label_nama_akun">Nama Akun</string>
+    <string name="auth_hint_id_toko">Contoh: AB12CD34</string>
+    <string name="auth_hint_nama_akun">Masukkan nama akun</string>
+    <string name="auth_hint_email">Masukkan email</string>
+    <string name="auth_hint_password">Masukkan kata sandi</string>
+    <string name="auth_kasir_forgot_password_info">Lupa kata sandi? Hubungi Owner</string>
+    <string name="auth_login_owner_cta">Masuk sebagai Owner</string>
+    <string name="auth_login_kasir_cta">Masuk sebagai Kasir</string>
+    <string name="auth_password_toggle_show">Tampilkan kata sandi</string>
+    <string name="auth_password_toggle_hide">Sembunyikan kata sandi</string>
+    <string name="auth_password_show_short">Lihat</string>
+    <string name="auth_password_hide_short">Tutup</string>
+    <string name="auth_register_password_helper">Kata sandi minimal 8 karakter.</string>
+    <string name="auth_register_step1_subtitle">Langkah 1 dari 2 • Informasi akun Owner</string>
+    <string name="auth_register_step2_subtitle">Langkah 2 dari 2 • Identitas toko</string>
+    <string name="auth_register_opening_balance_helper">Nominal kas saat mulai, boleh 0</string>
+    <string name="auth_error_offline">Tidak ada koneksi internet. Periksa jaringan Anda lalu coba lagi.</string>
+    <string name="auth_error_generic">Terjadi kesalahan. Silakan coba lagi.</string>
+    <string name="auth_error_email_required">Email wajib diisi.</string>
+    <string name="auth_error_store_id_required">ID Toko wajib diisi.</string>
+    <string name="auth_error_username_required">Nama akun wajib diisi.</string>
+    <string name="auth_error_password_required">Kata sandi wajib diisi.</string>
+    <string name="auth_error_current_password_required">Kata sandi saat ini wajib diisi.</string>
+    <string name="auth_error_password_min_8">Kata sandi baru minimal 8 karakter.</string>
+    <string name="auth_error_password_mismatch">Konfirmasi kata sandi baru tidak cocok.</string>
+    <string name="auth_error_register_step1">Lengkapi nama, email valid, dan kata sandi minimal 8 karakter.</string>
+    <string name="auth_error_register_step2">Nama toko wajib diisi dan saldo awal tidak boleh negatif.</string>
+    <string name="auth_register_profile_partial_warning">Akun dan toko berhasil dibuat, tetapi profil Owner belum berhasil diperbarui: %1$s</string>
+
+    <string name="ubah_sandi_title">Ubah Kata Sandi</string>
+    <string name="ubah_sandi_subtitle">Perbarui kata sandi akun Anda secara berkala.</string>
+    <string name="ubah_sandi_wajib_banner">Demi keamanan, ganti kata sandi awal Anda sebelum melanjutkan.</string>
+    <string name="ubah_sandi_saat_ini">Kata sandi saat ini</string>
+    <string name="ubah_sandi_baru">Kata sandi baru (min. 8 karakter)</string>
+    <string name="ubah_sandi_konfirmasi">Konfirmasi kata sandi baru</string>
+    <string name="ubah_sandi_simpan">Simpan Kata Sandi</string>
+    <string name="ubah_sandi_berhasil">Kata sandi berhasil diperbarui.</string>
+
+    <string name="profil_id_toko_format">ID Toko: %1$s</string>
+    <string name="profil_salin">Salin</string>
+    <string name="profil_id_toko_disalin">ID Toko disalin ke papan klip.</string>
+    <string name="profil_edit_title">Edit Profil</string>
+    <string name="profil_edit_subtitle">Perbarui informasi akun Anda</string>
+    <string name="profil_simpan">Simpan Profil</string>
+    <string name="profil_simpan_berhasil">Profil berhasil diperbarui.</string>
+    <string name="profil_error_name_required">Nama akun wajib diisi.</string>
+    <string name="profil_error_email_invalid">Format email tidak valid.</string>
+    <string name="profil_email_owner_only_note">Hanya Owner yang dapat mengubah email</string>
+    <string name="settings_ubah_sandi_detail">Perbarui kata sandi akun Anda</string>
+
+    <string name="sheet_avatar_edit_profil">Edit Profil</string>
+    <string name="sheet_avatar_edit_profil_detail">Ubah nama, nomor HP, atau email</string>
+    <string name="sheet_avatar_edit_profil_kasir_detail">Ubah nama atau nomor HP</string>
+    <string name="sheet_avatar_ubah_sandi_detail">Ganti kata sandi masuk</string>
+    <string name="sheet_avatar_ganti_akun_detail">Masuk menggunakan akun lain di perangkat ini</string>
+    <string name="sheet_avatar_keluar_detail">Akhiri sesi di perangkat ini</string>
+
+    <string name="ganti_akun_title">Ganti Akun</string>
+    <string name="ganti_akun_subtitle">Pilih akun yang pernah masuk di perangkat ini</string>
+    <string name="ganti_akun_kosong">Belum ada riwayat akun di perangkat ini.</string>
+    <string name="ganti_akun_tambah_lain">Tambah akun lain</string>
+    <string name="ganti_akun_verifikasi_title">Verifikasi Kata Sandi</string>
+    <string name="ganti_akun_verifikasi_pesan">Masukkan kata sandi untuk masuk sebagai %1$s.</string>
+    <string name="ganti_akun_masuk_cta">Masuk</string>
+
+    <string name="logout_confirm_title">Keluar dari AURA?</string>
+    <string name="logout_confirm_message">Anda perlu masuk kembali untuk mengakses data toko.</string>
+    <string name="logout_confirm_cta">Keluar</string>
+
+    <string name="kasir_subtitle">Kelola akun Kasir untuk toko ini</string>
+    <string name="kasir_empty">Belum ada akun Kasir. Ketuk tombol tambah untuk membuat akun.</string>
+    <string name="kasir_coba_lagi">Coba lagi</string>
+    <string name="kasir_buat_sandi_otomatis">Buat Otomatis</string>
+    <string name="kasir_sandi_awal_label">Kata Sandi Awal (min. 8 karakter)</string>
+    <string name="kasir_error_username_required">Nama akun Kasir wajib diisi.</string>
+    <string name="kasir_aktifkan">Aktifkan</string>
+    <string name="kasir_nonaktifkan">Nonaktifkan</string>
+    <string name="kasir_hapus_confirm_title">Hapus Akun Kasir?</string>
+    <string name="kasir_hapus_confirm_message">Akun %1$s akan dihapus dari daftar aktif dan sesinya dihentikan, tetapi riwayat transaksi lama tetap tersimpan.</string>
+    <string name="kasir_hapus_cta">Hapus</string>
+    <string name="kasir_reset_title">Reset Kata Sandi Kasir</string>
+    <string name="kasir_reset_pesan">Masukkan kata sandi baru (min. 8 karakter) untuk %1$s. Kasir wajib mengganti sandi saat masuk kembali.</string>
+    <string name="kasir_reset_simpan">Simpan Sandi Baru</string>
+    <string name="kasir_info_login_title_baru">Akun Kasir Dibuat</string>
+    <string name="kasir_info_login_title_reset">Kata Sandi Kasir Direset</string>
+    <string name="kasir_info_login_note">Bagikan info masuk ini sekarang. Demi keamanan, kata sandi hanya ditampilkan sekali dan Kasir wajib menggantinya saat masuk.</string>
+    <string name="kasir_bagikan_salin">Salin Info</string>
+    <string name="kasir_bagikan_wa">Bagikan WhatsApp</string>
+    <string name="kasir_info_disalin">Info login Kasir disalin ke papan klip.</string>
+    <string name="kasir_wa_tidak_tersedia">Tidak ada aplikasi untuk membuka WhatsApp atau tautan bagikan.</string>
+    <string name="kasir_status_aktif">Aktif</string>
+    <string name="kasir_status_nonaktif">Nonaktif</string>
+    <string name="kasir_terakhir_login_format">Terakhir login: %1$s</string>
+    <string name="kasir_belum_pernah_login">Belum pernah login</string>
+    <string name="kasir_share_template">Info Login Kasir AURA\nID Toko: %1$s\nNama Akun: %2$s\nKata Sandi Awal: %3$s\n(Wajib ganti sandi saat login pertama)</string>
 </resources>
