@@ -3,6 +3,7 @@ package com.aura.app.data.remote
 import com.aura.app.BuildConfig
 import com.aura.app.data.remote.api.AuthApiService
 import com.aura.app.data.remote.api.KatalogApiService
+import com.aura.app.data.remote.api.PenjualanApiService
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -46,4 +47,11 @@ object RetrofitClient {
         onUnauthorized: () -> Unit,
     ): KatalogApiService = createRetrofit(baseUrl, tokenProvider, onUnauthorized)
         .create(KatalogApiService::class.java)
+
+    fun createPenjualanApiService(
+        baseUrl: String = BuildConfig.BASE_URL,
+        tokenProvider: () -> String?,
+        onUnauthorized: () -> Unit,
+    ): PenjualanApiService = createRetrofit(baseUrl, tokenProvider, onUnauthorized)
+        .create(PenjualanApiService::class.java)
 }

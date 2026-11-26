@@ -96,7 +96,7 @@ fun HargaBeliSupplierDto.toEntity(idToko: String): HargaBeliSupplierEntity = Har
     terakhirDiperbarui = diperbaruiPada,
 )
 
-private fun String.toSumberPergerakan(): SumberPergerakan = when (this) {
+internal fun String.toSumberPergerakan(): SumberPergerakan = when (this) {
     "STOCK_OPNAME" -> SumberPergerakan.PENYESUAIAN
     "PEMBATALAN_PENJUALAN" -> SumberPergerakan.PEMBATALAN
     else -> SumberPergerakan.valueOf(this)

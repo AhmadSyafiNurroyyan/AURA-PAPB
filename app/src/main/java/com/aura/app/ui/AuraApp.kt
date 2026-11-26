@@ -11,12 +11,15 @@ import com.aura.app.data.remote.GlobalSessionHandler
 import com.aura.app.data.remote.RetrofitClient
 import com.aura.app.data.remote.datasource.AuthRemoteDataSource
 import com.aura.app.data.remote.datasource.KatalogRemoteDataSource
+import com.aura.app.data.remote.datasource.PenjualanRemoteDataSource
 import com.aura.app.data.repository.AkunRepository
 import com.aura.app.data.repository.AuthRepository
 import com.aura.app.data.repository.BarangRepository
+import com.aura.app.data.repository.DefaultPenjualanRepository
 import com.aura.app.data.repository.DefaultBarangRepository
 import com.aura.app.data.repository.DefaultAkunRepository
 import com.aura.app.data.repository.DefaultAuthRepository
+import com.aura.app.data.repository.PenjualanRepository
 import com.aura.app.navigation.AuraNavHost
 
 @Composable
@@ -40,6 +43,13 @@ fun AuraApp(vm: AuraViewModel = viewModel()) {
         )
     }
     val katalogRemoteDataSource = remember { KatalogRemoteDataSource(katalogApiService) }
+    val penjualanApiService = remember {
+        RetrofitClient.createPenjualanApiService(
+            tokenProvider = { sesiRepository.tokenTersimpanSinkron() },
+            onUnauthorized = { globalSessionHandler.onUnauthorized() },
+        )
+    }
+    val penjualanRemoteDataSource = remember { PenjualanRemoteDataSource(penjualanApiService) }
     val authRepository: AuthRepository = remember {
         DefaultAuthRepository(appDatabase, authRemoteDataSource, sesiRepository, koneksiChecker)
     }
@@ -49,11 +59,15 @@ fun AuraApp(vm: AuraViewModel = viewModel()) {
     val barangRepository: BarangRepository = remember {
         DefaultBarangRepository(appDatabase, katalogRemoteDataSource, koneksiChecker, sesiRepository)
     }
+    val penjualanRepository: PenjualanRepository = remember {
+        DefaultPenjualanRepository(appDatabase, penjualanRemoteDataSource, koneksiChecker, sesiRepository)
+    }
 
     AuraNavHost(
         authRepository = authRepository,
         akunRepository = akunRepository,
         barangRepository = barangRepository,
+        penjualanRepository = penjualanRepository,
         globalSessionHandler = globalSessionHandler,
         koneksiChecker = koneksiChecker,
         vm = vm,

@@ -26,6 +26,12 @@ interface TransaksiDao {
     @Upsert
     suspend fun upsertItems(daftar: List<ItemTransaksiEntity>)
 
+    @Query("DELETE FROM item_transaksi WHERE transaksiId IN (SELECT id FROM transaksi_penjualan WHERE idToko = :idToko)")
+    suspend fun clearItemsByToko(idToko: String)
+
+    @Query("DELETE FROM transaksi_penjualan WHERE idToko = :idToko")
+    suspend fun clearByToko(idToko: String)
+
     @Query("DELETE FROM transaksi_penjualan")
     suspend fun clearAll()
 }
