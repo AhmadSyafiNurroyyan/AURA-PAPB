@@ -748,7 +748,9 @@ fun AuraNavHost(
                             suppliers = katalogState.supplier,
                             initialProductId = selectedProductId,
                             saving = katalogState.isSaving,
+                            creatingSupplier = katalogState.isSavingSupplier,
                             save = katalogVm::catatRestock,
+                            createSupplier = { katalogVm.simpanSupplier(null, it, null, null) },
                             manageSuppliers = { go(Routes.SUPPLIER) },
                             back = { back() },
                         )
@@ -790,7 +792,6 @@ fun AuraNavHost(
                         val katalogState by katalogVm.uiState.collectAsStateWithLifecycle()
                         LaunchedEffect(sesiAktif?.idToko, selectedProductId) {
                             sesiAktif?.idToko?.let {
-                                katalogVm.muat(it)
                                 katalogVm.muatPergerakan(it, selectedProductId.takeIf(String::isNotBlank))
                             }
                         }
@@ -799,8 +800,17 @@ fun AuraNavHost(
                                 selectedProductId.isBlank() || it.barangId == selectedProductId
                             },
                             nextCursor = katalogState.pergerakanNextCursor,
+                            loading = katalogState.isLoadingPergerakan,
                             loadingMore = katalogState.isLoadingMorePergerakan,
                             error = katalogState.errorMessage,
+                            retry = {
+                                sesiAktif?.idToko?.let {
+                                    katalogVm.muatPergerakan(
+                                        it,
+                                        selectedProductId.takeIf(String::isNotBlank),
+                                    )
+                                }
+                            },
                             loadMore = { katalogVm.muatPergerakanBerikutnya(selectedProductId) },
                         )
                     }

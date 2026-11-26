@@ -45,6 +45,7 @@ data class KatalogUiState(
     val kategoriTampilan: List<KategoriTampilan> = emptyList(),
     val supplier: List<SupplierEntity> = emptyList(),
     val pergerakan: List<PergerakanStokEntity> = emptyList(),
+    val isLoadingPergerakan: Boolean = true,
     val pergerakanNextCursor: String? = null,
     val isLoadingMorePergerakan: Boolean = false,
     val detail: BarangDetailResponseDto? = null,
@@ -57,6 +58,7 @@ data class KatalogUiState(
     val filterStatus: String = "Semua",
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
+    val isSavingSupplier: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -180,6 +182,8 @@ class KatalogViewModel(
     fun muatPergerakan(idToko: String, barangId: String? = null) {
         _uiState.update {
             it.copy(
+                idToko = idToko,
+                isLoadingPergerakan = true,
                 pergerakanNextCursor = null,
                 isLoadingMorePergerakan = false,
                 errorMessage = null,
@@ -190,15 +194,22 @@ class KatalogViewModel(
                 val nextCursor = repository.refreshPergerakan(idToko, barangId)
                 _uiState.update {
                     it.copy(
+                        isLoadingPergerakan = false,
                         errorMessage = null,
                         pergerakanNextCursor = nextCursor,
                         isLoadingMorePergerakan = false,
                     )
                 }
             } catch (error: CancellationException) {
+                _uiState.update { it.copy(isLoadingPergerakan = false) }
                 throw error
             } catch (error: Exception) {
-                _uiState.update { it.copy(errorMessage = error.message ?: "Gagal memuat Pergerakan Stok.") }
+                _uiState.update {
+                    it.copy(
+                        isLoadingPergerakan = false,
+                        errorMessage = error.message ?: "Gagal memuat Pergerakan Stok.",
+                    )
+                }
             }
         }
     }
@@ -337,12 +348,16 @@ class KatalogViewModel(
     fun simpanSupplier(supplierId: String?, nama: String, link: String?, catatan: String?) {
         val idToko = _uiState.value.idToko ?: return
         viewModelScope.launch {
+            _uiState.update { it.copy(isSavingSupplier = true) }
             try {
                 repository.simpanSupplier(idToko, supplierId, nama, link, catatan)
+                _uiState.update { it.copy(isSavingSupplier = false) }
                 _events.emit(KatalogEvent.Pesan("Supplier berhasil disimpan."))
             } catch (error: CancellationException) {
+                _uiState.update { it.copy(isSavingSupplier = false) }
                 throw error
             } catch (error: Exception) {
+                _uiState.update { it.copy(isSavingSupplier = false) }
                 _events.emit(KatalogEvent.Pesan(error.message ?: "Supplier gagal disimpan."))
             }
         }

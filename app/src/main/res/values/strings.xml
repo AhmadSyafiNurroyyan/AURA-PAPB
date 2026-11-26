@@ -326,7 +326,8 @@
     <string name="restock_effects">Stok, HPP, Pengeluaran Pembelian, dan saldo diperbarui otomatis.</string>
     <string name="restock_select_product">Pilih Barang</string>
     <string name="restock_select_supplier">Pilih Supplier</string>
-    <string name="restock_manage_suppliers">Kelola atau tambah Supplier</string>
+    <string name="restock_manage_suppliers">Kelola Supplier</string>
+    <string name="katalog_create_supplier">Buat</string>
     <string name="restock_quantity">Jumlah masuk</string>
     <string name="restock_total_paid">Total dibayar</string>
     <string name="restock_unit_price">Harga per item: %1$s</string>
