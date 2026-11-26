@@ -107,12 +107,14 @@ class KeuanganViewModel(
     private var observeJob: Job? = null
     private var observeCatalogJob: Job? = null
     private var refreshJob: Job? = null
+    private var detailPengeluaranJob: Job? = null
 
     fun sambungkanSesi(sesi: SesiAktif?) {
         if (sesiAktif?.akunId == sesi?.akunId && sesiAktif?.idToko == sesi?.idToko) return
         observeJob?.cancel()
         observeCatalogJob?.cancel()
         refreshJob?.cancel()
+        detailPengeluaranJob?.cancel()
         sesiAktif = sesi
         _uiState.value = KeuanganUiState(idToko = sesi?.idToko, isLoading = sesi != null)
         if (sesi?.peran != com.aura.app.core.model.Peran.OWNER) return
@@ -254,8 +256,15 @@ class KeuanganViewModel(
 
     fun muatDetailPengeluaran(id: String) {
         val idToko = _uiState.value.idToko ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingDetail = true, errorMessage = null) }
+        detailPengeluaranJob?.cancel()
+        detailPengeluaranJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    detailPengeluaran = null,
+                    isLoadingDetail = true,
+                    errorMessage = null,
+                )
+            }
             try {
                 val detail = repository.detailPengeluaran(idToko, id)
                 _uiState.update { it.copy(detailPengeluaran = detail, isLoadingDetail = false) }
